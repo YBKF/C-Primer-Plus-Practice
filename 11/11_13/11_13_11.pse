@@ -1,0 +1,16 @@
+定义包含10个字符串的字符串数组:
+co = 10
+ch = 100
+op_co = 0
+op_ch = 0
+
+str[co][ch]
+cmp_a = str[op_co][op_ch]
+cmp_b = str[op_co+1][op_ch]
+
+final_result
+
+if (cmp_a == cmp_b && cmp_a != '\0')
+: cmp_a++
+else
+: final_result = cmp_a - cmp_b

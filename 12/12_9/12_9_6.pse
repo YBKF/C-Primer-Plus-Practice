@@ -1,0 +1,11 @@
+int num[10]
+int randNum
+
+for i=0; i<1000; i++ {
+    randNum=rand()
+
+    for i=0; i<10; i++ {
+        if (i+1)==randNum
+            num[i]++
+    }
+}
