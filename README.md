@@ -1,4 +1,4 @@
-# C-Primer-Plus-Practice
+# C Primer Plus Practice
 "C Primer Plus" Programming Pratice
 
 ## 关于本仓库
