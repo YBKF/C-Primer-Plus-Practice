@@ -50,3 +50,7 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# Test code
+_Test/t_Test
+_Test/t_Test2
