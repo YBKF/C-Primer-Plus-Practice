@@ -52,5 +52,5 @@ Mkfile.old
 dkms.conf
 
 # Test code
-_Test/t_Test
-_Test/t_Test2
+_Test/t_Test/
+_Test/t_Test2/
