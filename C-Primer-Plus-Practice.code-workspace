@@ -55,7 +55,8 @@
 			"string_s.h": "c",
 			"errno.h": "c",
 			"_mingw_print_push.h": "c",
-			"stdlib.h": "c"
+			"stdlib.h": "c",
+			"diceroll.h": "c"
 		}
 	}
 }
