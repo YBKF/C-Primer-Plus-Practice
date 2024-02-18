@@ -18,6 +18,7 @@ int main(void)
     while (scanf("%d", &sides) == 1 && sides > 0)
     {
         printf("How many dice?\n");
+        
         if ((status = scanf("%d", &dice)) != 1)
         {
             if (status == EOF)
@@ -26,20 +27,26 @@ int main(void)
             {
                 printf("You should have entered an integer.");
                 printf(" Let's begin again.\n");
+
                 while (getchar() != '\n')
                     continue; /* 处理错误的输入 */
+
                 printf("How many sides? Enter 0 to stop.\n");
+
                 continue; /* 进入循环的下一轮迭代 */
             }
         }
         roll = roll_n_dice(dice, sides);
         printf("You have rolled a %d using %d %d-sided dice.\n",
                roll, dice, sides);
+
         printf("How many sides? Enter 0 to stop.\n");
     }
 
     printf("The rollem() function was called %d times.\n",
            roll_count); /* 使用外部变量 */
+
     printf("GOOD FORTUNE TO YOU!\n");
+
     return 0;
 }
