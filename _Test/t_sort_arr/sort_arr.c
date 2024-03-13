@@ -33,6 +33,7 @@ void copyintArr(int iArr_target[], int iArr_source[], int count)
     memcpy(iArr_target, iArr_source, size);
 }
 
+// 从表的第一个元素开始从表头向后依次和其他元素比较，比较完毕后得出大于本元素的元素数量即为本元素在表中的顺序
 void sortArrByReverse(int iArr_source[], int count)
 {
     int iOP_outter, iOP_inner; // 定义两个用于操作内外两个for循环的操作数
@@ -47,7 +48,7 @@ void sortArrByReverse(int iArr_source[], int count)
                 iSeq_temp++;
 
             /**
-             * 从当前元素向后检测，如检测到有与当前元素的值相等的元素值则 临时顺序+1
+             * 从当前元素向后检测，如检测到有与当前元素的值相等的元素值则 临时顺序+1，限定不包含已检测过的范围防止重复+1
              */
             if (iArr_source[iOP_outter] == iArr_source[iOP_inner] && iOP_inner > iOP_outter)
                 iSeq_temp++;
