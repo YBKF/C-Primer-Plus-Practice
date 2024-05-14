@@ -16,10 +16,10 @@
 
 bool printMenu();
 int getselection();
-int onOpeartion(int selection, char *pchArr[], const int count);
+int onOperation(int selection, char *pchArr[], const int count);
 
 char *s_gets(char *str, int maxCount);
-int getsnlenOfFirstWord(const char *str, int maxCount);
+int getFirstWordLength(const char *str, int maxCount);
 void printAsterisk(int count);
 
 void sortStrListByASCII(char *strArrTarget[], char *strArrSource[], const int count);
@@ -50,7 +50,7 @@ int main(int argc, char const *argv[])
     while (iRetValOperation)
     {
         printMenu();
-        iRetValOperation = onOpeartion(getselection(), pchArrInput, i_strCount);
+        iRetValOperation = onOperation(getselection(), pchArrInput, i_strCount);
     }
 
     return 0;
@@ -60,10 +60,11 @@ int main(int argc, char const *argv[])
 bool printMenu()
 {
     printAsterisk(120);
-    fputs("Please select an operation(1~5), 5 to exit:\n\n", stdout);
-    fputs("1.Print source string list.\t\t\t\t2.Print string list by the order of ASCII.\n", stdout);
-    fputs("3.Print string list by the order of string length.\t4.Print string list by the order of length of the first word.\n", stdout);
-    fputs("5.Exit.\n", stdout);
+    fputs("Please select an operation(1~5), 5 to exit:\n\n\
+    1.Print source string list.\t\t\t\t2.Print string list by the order of ASCII.\n\
+    3.Print string list by the order of string length.\t4.Print string list by the order of length of the first word.\n\
+    5.Exit.\n",
+          stdout);
     printAsterisk(120);
     fputs("Input here: ", stdout);
     return true;
@@ -92,7 +93,7 @@ int getselection()
 }
 
 // 执行退出操作（即selection == 5）或操作数不合法后将返回false，否则返回true
-int onOpeartion(int selection, char *pchArr[], const int count)
+int onOperation(int selection, char *pchArr[], const int count)
 {
     if (selection == 5)
         return false;
@@ -153,9 +154,15 @@ char *s_gets(char *s, int n)
     return s;
 }
 
-/* 读取一个字符串，获取字符串中第一个单词的长度，最大长度不超过maxCount的限制，当在字符串开头读到EOF时则返回-1(EOF) */
-int getsnlenOfFirstWord(const char *str, int maxCount)
+/*
+ * 计算字符串中第一个单词的长度，最大长度不超过maxCount的限制。
+ * 当在字符串开头读到空格或字符串结尾时终止。
+ * 如果maxCount小于等于0或字符串指针为空，则返回0。
+ * 如果在字符串开始处即遇到空格，则返回0。
+ */
+int getFirstWordLength(const char *str, int maxCount)
 {
+    // 输入参数验证
     if (str == NULL || maxCount <= 0)
         return 0;
 
@@ -164,10 +171,8 @@ int getsnlenOfFirstWord(const char *str, int maxCount)
     while (maxCount-- > 0 && str[count] != ' ' && str[count] != '\0')
         count++;
 
-    if (str[count] == EOF && 0 == count)
-        return EOF;
-
-    return count;
+    // 此处返回值使用三目运算仅用于明确逻辑，在此函数中效果与 return count; 无区别
+    return (count == 0) ? 0 : count;
 }
 
 /* 打印指定个数的星号(*)，并在最后换行 */
@@ -196,7 +201,7 @@ void sortStrListByASCII(char *strArrTarget[], char *strArrSource[], const int co
     isSorted = (bool *)calloc(count, sizeof(bool)); // 需要申请并归零
     if (NULL == isSorted)
     {
-        puts("Memory allocation failed! At pointer \"isSorted\" in funcation \"sortStrListByASCII\".");
+        puts("Memory allocation failed! At pointer \"isSorted\" in function \"sortStrListByASCII\".");
         exit(EXIT_FAILURE);
     }
 
@@ -239,7 +244,7 @@ void sortStrListByIncreasingLength(char *strArrTarget[], char *strArrSource[], c
     isSorted = (bool *)calloc(count, sizeof(bool)); // 需要申请并归零
     if (NULL == isSorted)
     {
-        puts("Memory allocation failed! At pointer \"isSorted\" in funcation \"sortStrListByIncreasingLength\".");
+        puts("Memory allocation failed! At pointer \"isSorted\" in function \"sortStrListByIncreasingLength\".");
         exit(EXIT_FAILURE);
     }
 
@@ -250,11 +255,11 @@ void sortStrListByIncreasingLength(char *strArrTarget[], char *strArrSource[], c
             iMinLen = strnlen(strArrSource[iMin], STR_MAX_LENGTH - 1);
             iSeekLen = strnlen(strArrSource[iSeek], STR_MAX_LENGTH - 1);
 
-            if (!isSorted[iSeek] && ((iMinLen - iSeekLen) > 0))
+            if (!isSorted[iSeek] && (iSeekLen < iMinLen))
                 iMin = iSeek;
         }
 
-        isSorted[iMin] = true;
+        isSorted[iMin] = true; // 在每一轮中标记当前选中的最小长度字符串
 
         /* 若iTop下标的元素正是刚刚被排序的元素，则将以下一个元素为开头，即iTop++，
          若下一个元素也是排序过的元素则继续iTop++，直到iTop指示的元素不为排序过的元素。
@@ -284,7 +289,7 @@ void sortStrListByFirstWordLength(char *strArrTarget[], char *strArrSource[], co
     isSorted = (bool *)calloc(count, sizeof(bool)); // 需要申请并归零
     if (NULL == isSorted)
     {
-        puts("Memory allocation failed! At pointer \"isSorted\" in funcation \"sortStrListByFirstWordLength\".");
+        puts("Memory allocation failed! At pointer \"isSorted\" in function \"sortStrListByFirstWordLength\".");
         exit(EXIT_FAILURE);
     }
 
@@ -292,10 +297,10 @@ void sortStrListByFirstWordLength(char *strArrTarget[], char *strArrSource[], co
     {
         for (iMin = iTop, iSeek = iTop + 1; iSeek < count; iSeek++)
         {
-            iMinLen = getsnlenOfFirstWord(strArrSource[iMin], STR_MAX_LENGTH - 1);
-            iSeekLen = getsnlenOfFirstWord(strArrSource[iSeek], STR_MAX_LENGTH - 1);
+            iMinLen = getFirstWordLength(strArrSource[iMin], STR_MAX_LENGTH - 1);
+            iSeekLen = getFirstWordLength(strArrSource[iSeek], STR_MAX_LENGTH - 1);
 
-            if (!isSorted[iSeek] && ((iMinLen - iSeekLen) > 0))
+            if (!isSorted[iSeek] && (iSeekLen < iMinLen))
                 iMin = iSeek;
         }
 
@@ -361,7 +366,7 @@ void printStrListByASCII(char *pchArr[], const int count)
     pchSorted = (char **)malloc(count * sizeof(char *));
     if (!pchSorted)
     {
-        puts("Memory allocation failed! At pointer \"pchSorted\" in funcation \"printStrListByASCII\".");
+        puts("Memory allocation failed! At pointer \"pchSorted\" in function \"printStrListByASCII\".");
         exit(EXIT_FAILURE);
     }
 
@@ -380,7 +385,7 @@ void printStrListByIncreasingLength(char *pchArr[], const int count)
     pchSorted = (char **)malloc(count * sizeof(char *));
     if (!pchSorted)
     {
-        puts("Memory allocation failed! At pointer \"pchSorted\" in funcation \"printStrListByIncreasingLength\".");
+        puts("Memory allocation failed! At pointer \"pchSorted\" in function \"printStrListByIncreasingLength\".");
         exit(EXIT_FAILURE);
     }
 
@@ -399,7 +404,7 @@ void printStrListByFirstWordLength(char *pchArr[], const int count)
     pchSorted = (char **)malloc(count * sizeof(char *));
     if (!pchSorted)
     {
-        puts("Memory allocation failed! At pointer \"pchSorted\" in funcation \"printStrListByFirstWordLength\".");
+        puts("Memory allocation failed! At pointer \"pchSorted\" in function \"printStrListByFirstWordLength\".");
         exit(EXIT_FAILURE);
     }
 
