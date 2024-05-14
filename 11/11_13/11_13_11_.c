@@ -53,13 +53,6 @@ int main(int argc, char const *argv[])
         iRetValOperation = onOpeartion(getselection(), pchArrInput, i_strCount);
     }
 
-    // printStrings(pchArr, i_strCount);
-    // printStrListByASCII(pchArr, i_strCount);
-    // putchar('\n');
-    // printStrListByIncreasingLength(pchArr, i_strCount);
-    // putchar('\n');
-    // printStrListByFirstWordLength(pchArr, i_strCount);
-
     return 0;
 }
 
@@ -86,16 +79,14 @@ int getselection()
     while (getchar() != '\n')
         continue;
 
-    if (retVal != 1 || selection < 1 || selection > 5)
-        do
-        {
-            fputs("Please Re-Input: ", stdout);
+    while (retVal != 1 || selection < 1 || selection > 5)
+    {
+        fputs("Please Re-Input: ", stdout);
 
-            retVal = scanf("%d", &selection);
-            while (getchar() != '\n')
-                continue;
-
-        } while (retVal != 1 || selection < 1 || selection > 5);
+        retVal = scanf("%d", &selection);
+        while (getchar() != '\n')
+            continue;
+    }
 
     return selection;
 }
