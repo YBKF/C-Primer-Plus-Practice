@@ -4,14 +4,11 @@
 #include <stdio.h>
 #include <stdlib.h> /* 提供库函数 rand()的原型 */
 
-int roll_count = 0; /* 外部链接 */
-
 static int rollem(int sides) /* 该函数属于该文件私有 */
 {
     int roll;
 
     roll = rand() % sides + 1;
-    ++roll_count; /* 计算函数调用次数 */
 
     return roll;
 }
