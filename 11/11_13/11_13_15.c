@@ -6,7 +6,6 @@
 
 #define DEC_BASE 10
 
-int ischnum(int c);
 int powi(int iBase, int iExpo);
 int my_atoi(const char *str);
 
@@ -16,14 +15,6 @@ int main(int argc, char const *argv[])
            my_atoi("+555666"), my_atoi("12345"), my_atoi("007"), my_atoi("-996"), my_atoi("omo"), my_atoi("233^_^"));
 
     return 0;
-}
-
-int ischnum(int c)
-{
-    if ((char)c >= '0' && (char)c <= '9')
-        return 1;
-    else
-        return 0;
 }
 
 // 计算参数的整型幂。仅在字符数字转换为整型的算法中作为辅助函数，故不支持基数<0或指数<0的计算，若基数<0或指数<0则将返回0
@@ -59,7 +50,7 @@ int my_atoi(const char *str)
     int isNegative = 0;         // 用来标记输入数据是否为负数的标志
 
     /* 首先，检查str第一个字符是否为纯字符数字或正负号，如果均不是则直接返回0 */
-    if (ischnum(str[iNum]))
+    if (isdigit(str[iNum]))
     {
         iNum++;
         iDig++;
@@ -79,7 +70,7 @@ int my_atoi(const char *str)
 
     /* 其次，向后计算字符数字的位数，每检测到一位数字则iExpo++，直到检测到'\0'，
     若在检测过程中检测到非字符串数字则返回0 */
-    while (ischnum(str[iNum]))
+    while (isdigit(str[iNum]))
     {
         iNum++;
         iDig++;
