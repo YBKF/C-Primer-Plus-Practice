@@ -55,6 +55,7 @@ dkms.conf
 _Test/t_Test/
 _Test/t_Test2/
 *.test
+*.cpy
 
 # .vscode
 .vscode/
