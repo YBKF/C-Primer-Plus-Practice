@@ -1,6 +1,6 @@
 # C Primer Plus Practice
 
-"C Primer Plus" Programming Pratice
+"C Primer Plus" Programming Practice
 
 ## 关于本仓库
 
