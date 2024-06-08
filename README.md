@@ -13,7 +13,7 @@
 ### Windows 平台
 
 - Microsoft Windows 11 专业工作站版 (10.0.22621 版本)
-- MinGW-W64-builds-4.3.5
+- gcc.exe (Rev3, Built by MSYS2 project) 14.1.0
 - Visual Studio Code
 
 ### Linux 平台
