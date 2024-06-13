@@ -37,32 +37,41 @@ int check_file(FILE *file);
 int main(void)
 {
     FILE *fp;
-    char words[MAX];
+    char words[MAX] = {};
 
-    if ((fp = fopen("wordy", "r+")) == NULL)
+    if ((fp = fopen("wordy.test", "a+")) == NULL)
     {
-        fprintf(stdout, "Can't open \"wordy\" file.\n");
+        fprintf(stdout, "Can't open \"wordy.test\" file.\n");
         exit(EXIT_FAILURE);
     }
 
-    fclose(fp);
-    if ((fp = fopen("wordy", "a+")) == NULL)
+    int ret_val_check;
+    int word_num;
+
+    // check_file() 返回值>=0时，表示文件合法，此时的返回值为最后一个单词的编号
+    if ((ret_val_check = check_file(fp)) < 0)
     {
-        fprintf(stdout, "Can't open \"wordy\" file.\n");
+        fprintf(stderr, "ERROR: Invalid file: %s\n", "\"wordy.test\"");
         exit(EXIT_FAILURE);
     }
+
+    word_num = ret_val_check;
+    word_num++;
 
     puts("Enter words to add to the file; press the #");
     puts("key at the beginning of a line to terminate.");
 
     while ((fscanf(stdin, "%40s", words) == 1) && (words[0] != '#'))
-        fprintf(fp, "%s\n", words);
+    {
+        fprintf(fp, "%d %s\n", word_num, words);
+        word_num++;
+    }
 
     puts("File contents:");
     rewind(fp); /* 返回到文件开始处 */
 
-    while (fscanf(fp, "%s", words) == 1)
-        puts(words);
+    while (fscanf(fp, "%d %s\n", &word_num, words) == 2)
+        fprintf(stdout, "%d %s\n", word_num, words);
 
     puts("Done!");
 
@@ -73,11 +82,14 @@ int main(void)
 }
 
 /**
+ * ! 注意：此函数将返回值用作多种用途，在此处可能并不是一个好的实现，可能会因疏忽而导致诸多的漏洞
+ *
  * 检查文件中一行格式的合法性，
  * 返回值：
  * > 0  ，此行合法，返回值为此行的编号；
+ * == 0 ，读取文件时遇到错误（无法读取文件）；
  * EOF  ，遇到文件结尾；
- * 0    ，遇到其他错误。
+ * < -1  ，遇到错误。
  *
  * 文件中“一行（一个单词）”合法格式：
  * [数字（编号）] + [空白字符（空格）] + [一串字符串（中间不允许有空格）] + [一个换行符\n]
@@ -88,7 +100,7 @@ int check_file_line(FILE *file)
         return 0;
 
     int num_line;
-    char word_temp;
+    char word_temp[MAX];
     int status; // 用于获取fscanf()函数的返回值，当在函数中检测到文件的不合规的错误时便于进行分析处理
 
     /*
@@ -102,21 +114,36 @@ int check_file_line(FILE *file)
     其他返回值都表示本行不合法，需要在调用函数处报告错误。 */
     if ((status = fscanf(file, " %d %s\n", &num_line, word_temp)) == 2)
     {
+        if (num_line <= 0)
+        {
+            fprintf(stderr, "ERROR: Invalid line number %d\n", num_line);
+            return -4;
+        }
+
         fseek(file, -1L, SEEK_CUR);
-        if (getc(file) != '\n') // 未检测到换行符，本行不合法，返回0
-            return 0;
+        if (getc(file) != '\n') // 未检测到换行符，本行不合法
+        {
+            fprintf(stderr, "ERROR: Failed to find a line break after the word at line %d\n", num_line);
+            return -3;
+        }
         else
             return num_line;
     }
     else if (status == EOF && !ferror(file))
+    {
         return EOF;
+    }
     else
-        return 0;
+    {
+        fputs("ERROR: Invalid file formation.\n", stderr);
+        return -2;
+    }
 }
 
 /**
- * 检查文件合法性并返回文件中最后一个单词的编号，
- * 若文件不合法则返回0
+ * 检查文件合法性并返回文件中最后一个单词的编号（>=0），
+ * 编号为 0 表示当前文件为空。
+ * 若文件不合法则返回 EOF
  *
  * 文件中“一行（一个单词）”合法格式：
  * [数字（编号）] + [空白字符（空格）] + [一串字符串（中间不允许有空格）] + [一个换行符\n]
@@ -151,9 +178,9 @@ int check_file(FILE *file)
     {
         return word_number;
     }
-    else // status == 0
+    else // status == 0 || status < -1
     {
-        fputs("ERROR: Invalid file formation.\n", stderr);
-        return 0;
+        fputs("ERROR: An error ocurred while checking the file.\n", stderr);
+        return EOF;
     }
 }
