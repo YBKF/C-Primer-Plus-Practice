@@ -112,7 +112,7 @@ int check_file_line(FILE *file)
     fscanf() 返回值为 2 且第二步检测到换行符时，则表示本行合法（由于此处简单使用了fscanf(file, " %d %s\n", &num_line, word_temp)，所以并不保证严格合法）
     fscanf() 返回值为 -1 时，则表示顺利检测到文件结尾；
     其他返回值都表示本行不合法，需要在调用函数处报告错误。 */
-    if ((status = fscanf(file, " %d %s\n", &num_line, word_temp)) == 2)
+    if ((status = fscanf(file, " %d %40s\n", &num_line, word_temp)) == 2)
     {
         if (num_line <= 0)
         {
