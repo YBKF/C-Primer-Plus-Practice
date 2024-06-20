@@ -19,5 +19,5 @@
 ### Linux 平台
 
 - Fedora Linux 40 (Workstation Edition)
-- gcc (GCC) 14.0.1 20240411 (Red Hat 14.0.1-0)
+- gcc (GCC) 14.1.1 20240607 (Red Hat 14.1.1-5)
 - Visual Studio Code
