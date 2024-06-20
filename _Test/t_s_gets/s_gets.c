@@ -28,8 +28,6 @@ char *s_gets(char *s, int n)
         while (getchar() != '\n')
             continue;
 
-    // (a ∧ b) ∨ (a ∧ c) == a ∧ (b ∨ c)
-    // if (ferror(stream) || (feof(stream) && p == s))
     if (c == EOF && (p == s || ferror(stream)))
         return NULL;
 
