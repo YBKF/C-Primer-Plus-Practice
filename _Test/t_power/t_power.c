@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 
-/* a^b = e^(ln(a)*b) */
+/* a^b = e^(ln(a)*b) (a > 0)*/
 double power(double df_a, double df_b)
 {
     return exp(log(df_a) * df_b);

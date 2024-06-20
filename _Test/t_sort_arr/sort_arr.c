@@ -17,7 +17,7 @@ int main(int argc, char const *argv[])
 
     sortArrByReverse(i_arr, 7);
 
-    printf("arr:");
+    fputs("arr:", stdout);
     for (int i = 0; i < 7; i++)
     {
         printf("%d ", i_arr[i]);
@@ -33,7 +33,9 @@ void copyintArr(int iArr_target[], int iArr_source[], int count)
     memcpy(iArr_target, iArr_source, size);
 }
 
-// 从表的第一个元素开始从表头向后依次和其他元素比较，比较完毕后得出大于本元素的元素数量即为本元素在表中的顺序
+/**
+ * 从表的第一个元素开始从表头向后依次和其他元素比较，比较完毕后得出大于本元素的元素数量即为本元素在表中的顺序
+ */
 void sortArrByReverse(int iArr_source[], int count)
 {
     int iOP_outter, iOP_inner; // 定义两个用于操作内外两个for循环的操作数
