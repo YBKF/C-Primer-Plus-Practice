@@ -56,7 +56,21 @@
 			"errno.h": "c",
 			"_mingw_print_push.h": "c",
 			"stdlib.h": "c",
-			"diceroll.h": "c"
+			"diceroll.h": "c",
+			"bit": "c",
+			"charconv": "c",
+			"compare": "c",
+			"concepts": "c",
+			"ctime": "c",
+			"functional": "c",
+			"iterator": "c",
+			"numeric": "c",
+			"random": "c",
+			"format": "c",
+			"numbers": "c",
+			"span": "c",
+			"text_encoding": "c",
+			"variant": "c"
 		}
 	}
 }
