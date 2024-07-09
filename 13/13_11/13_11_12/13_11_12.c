@@ -26,6 +26,19 @@
 #define CHAR_PIC_PIXEL_SIZE (4)
 #define CHAR_PIC_STR_BUF_SIZE CHAR_PIC_PIXEL_SIZE
 
+#define CHAR_IS_OTHERS (0x0001)
+#define CHAR_IS_DIGIT (0x0002)
+#define CHAR_IS_SPACE (0x0004)
+#define CHAR_IS_LF (0x0008)
+#define CHAR_IS_EOF (0x0010)
+
+#define PARSE_OTHERS (0x0001)
+#define PARSE_DIGIT (0x0002)
+#define PARSE_SPACE (0x0004)
+#define PARSE_LF (0x0008)
+#define PARSE_EOF (0x0010)
+
+int CharInfo(int iCh, unsigned int *uiInfo);
 int parseCharPictureIntoIntArr(int iPicWidth, int iPicHeight, FILE *file, int iPic[][INT_PIC_WIDTH]);
 
 /**
@@ -40,6 +53,57 @@ int main(int argc, char const *argv[])
     parseCharPictureIntoIntArr(INT_PIC_WIDTH, INT_PIC_HEIGHT, iPic, stdin);
 
     return 0;
+}
+
+/**
+ * Param:
+ * - [in] iCh
+ * - [out] uiInfo
+ *
+ * 分析输入的字符参数 [in] iCh 的类型，将得到的结果存储到参数 [out] uiInfo 中，并返回 iCh
+ * 支持的字符类型：
+ * - CHAR_IS_OTHERS (0x0001)
+ * - CHAR_IS_DIGIT (0x0002)
+ * - CHAR_IS_SPACE (0x0004)
+ * - CHAR_IS_LF (0x0008)
+ * - CHAR_IS_EOF (0x0010)
+ */
+int CharInfo(int iCh, unsigned int *uiInfo)
+{
+    if (isdigit(iCh))
+        *uiInfo = CHAR_IS_DIGIT;
+    else if (iCh == ' ')
+        *uiInfo = CHAR_IS_SPACE;
+    else if (iCh == '\n')
+        *uiInfo = CHAR_IS_LF;
+    else if (iCh == EOF)
+        *uiInfo = CHAR_IS_EOF;
+    else
+        *uiInfo = CHAR_IS_OTHERS;
+
+    return iCh;
+}
+
+/**
+ * - [in] uiOptions
+ * - [out] pchStr
+ * - [in] iMaxCount
+ * - [in] file
+ *
+ * 根据 uiOptions 的参数
+ * [in] uiOptions 支持的参数：
+ * - PARSE_OTHERS (0x0001)
+ * - PARSE_DIGIT (0x0002)
+ * - PARSE_SPACE (0x0004)
+ * - PARSE_LF (0x0008)
+ * - PARSE_EOF (0x0010)
+ * 支持复合参数，如 "PARSE_DIGIT | PARSE_SPACE"
+ *
+ * 调用成功返回 1
+ * 发生错误时返回 0
+ */
+int ParseAString(unsigned int uiOptions, char *pchStr, int iMaxCount, FILE *file)
+{
 }
 
 /**
@@ -78,21 +142,22 @@ int parseCharPictureIntoIntArr(int iPicWidth, int iPicHeight, FILE *file, int iP
     /**
      * *1:  首先，检测 [二维整型数组表示列的下标] 是否小于要求的长度(iPicWidth)；
      * *a1:     小于要求的长度(iPicWidth)，则从文件中读取一个字符并把这个字符存储到一个临时的 [字符缓存] 中，
-     * *a2:     然后，检测 [字符缓存] 中的字符是否为数字字符；
-     * *aa1:        为数字字符，则将 [字符缓存] 中的字符存储到 [字符串缓存] 数组中（此数组只有4个元素，最多存储3个有效字符），\
+     * *a2:     然后，检测 [字符缓存] 中的字符是否为数字字符，且 [字符串缓存下标] 是否小于 [字符串缓存的大小]；
+     * *aa1:        为数字字符，则将 [字符缓存] 中的字符存储到 [字符串缓存] 数组中（此数组只有4个元素，最多存储3个有效字符，多余字符将被抛弃），\
      * *aa2:        然后，goto a1；
      * *ab1:        不为数字字符，则检测此字符:
      * *aba1:           - 为空格字符，则将 [字符串缓存] 中的字符转换为整型，并保存到 [二维整型数组] 中 [二维整型数组表示列的下标] + 1，[已保存的字符串的总量] + 1，\
      * *aba2:           然后 goto 1；
      * *abb1:           - 为换行符，则将 [字符串缓存] 中的字符转换为整型，并保存到 [二维整型数组] 中，\
      * *abb2:           然后，检测 [二维整型数组表示列的下标] 是否小于要求的长度(iPicWidth)；
-     * *abba1:              小于要求的长度，则将 [二维整型数组] 当前行剩下的所有元素填充为 0，且 [二维整型数组表示行的下标] + 1\
+     * *abba1:              小于要求的长度，则将 [二维整型数组] 当前行剩下的所有元素填充为 0（通过操作 [二维整型数组表示列的下标] ），\
      * *abba2:              然后，goto 1；
-     * *abc1:           - 为文件结尾(EOF)，则 [文件结尾标志] 设为 true，
+     * *abc1:           - 为文件结尾(EOF)，则 [文件结尾标志] 设为 true，\
      * *abc2:           然后，检测 [二维整型数组表示列的下标] 是否小于要求的长度(iPicWidth)；
-     * *abca1:              小于要求的长度，则将 [二维整型数组] 当前行剩下的所有元素填充为 0，且 [二维整型数组表示行的下标] + 1\
+     * *abca1:              小于要求的长度，则将 [二维整型数组] 当前行剩下的所有元素填充为 0（通过操作 [二维整型数组表示列的下标] ），\
      * *abca2:              然后，goto 1；
-     * *abd1:           - 为其他字符，则抛弃此字符，goto a1；
+     * *abd1:           - 为数字字符（表示 [字符串缓存下标] 不小于 [字符串缓存的大小]） 或 其他字符，则抛弃此字符，直到遇到下一个非数字字符，\
+     * *abd2:           然后，goto 1；
      * *b1:     不小于要求的长度(iPicWidth)，即当前行已满，检测 [二维整型数组表示行的下标] 是否小于要求的行数(iPicHeight)；
      * *ba1:        小于要求的行数(iPicHeight)，则检测 [文件结尾标志] 是否为 true；
      * *baa1:           [文件结尾标志] 为 true，则将剩余行填充为0，然后，返回 [已保存的字符串的总量]；
@@ -107,18 +172,76 @@ int parseCharPictureIntoIntArr(int iPicWidth, int iPicHeight, FILE *file, int iP
      * 未到达文件结尾，则表示此行已满，跳转到下一行继续读取
      */
 
-    int iRowIndex = 0;                          // 行数，用于操作数组
-    int iColIndex = 0;                          // 列数，用于操作数组
-    int chBuffer = 0;                           // 字符缓存
-    char strBuffer[CHAR_PIC_STR_BUF_SIZE] = {}; // 用于存储待转换字符串的缓存
-    int totalSaved = 0;                         // 已保存的字符串的总量
-    int isEOF = 0;                              // 文件结尾标志
+    int iCountTotalSaved = 0; // 已保存的字符串的总量
+    int isEOF = 0;            // 文件结尾标志
 
+    int iRowIndex = 0; // 行数，用于操作二维整型数组
+    int iColIndex = 0; // 列数，用于操作二维整型数组
+
+    int chBuf = 0;                           // 字符缓存
+    char strBuf[CHAR_PIC_STR_BUF_SIZE] = {}; // 用于存储待转换字符串的缓存
+    int strBufIndex = 0;                     // 字符串缓存的下标
+
+    unsigned int uiCharType = CHAR_IS_OTHERS;
+
+    /**
+     * 根据字符类型行动
+     */
     while (1)
     {
         if (iColIndex < iPicWidth)
         {
-            chBuffer = getc(file);
+
+            do
+            {
+                // 从文件获取一个字符
+                chBuf = getc(file);
+                CharInfo(chBuf, uiCharType);
+
+                if (uiCharType == CHAR_IS_DIGIT)
+                    strBuf[strBufIndex++] = chBuf;
+                else if (strBufIndex == 0 && chBuf != EOF)
+                    continue;
+                else
+                    break;
+
+            } while (strBufIndex < (CHAR_PIC_STR_BUF_SIZE - 1));
+
+            // 若读取流时发生错误则报告错误并返回当前已保存的字符串的总量
+            if (ferror(file))
+            {
+                fputs("ERROR: An error occurred while reading a file.\n", stderr);
+                return iCountTotalSaved;
+            }
+
+            strBuf[strBufIndex] = '\0';
+
+            switch (uiCharType)
+            {
+            case CHAR_IS_SPACE:
+                iPic[iRowIndex][iColIndex] = atoi(strBuf);
+                iColIndex++;
+                iCountTotalSaved++;
+                break;
+
+            case CHAR_IS_LF:
+                iPic[iRowIndex][iColIndex] = atoi(strBuf);
+                while (iColIndex < iPicWidth)
+                    iPic[iRowIndex][iColIndex++] = 0;
+                break;
+
+            case CHAR_IS_EOF:
+                isEOF = 1;
+                while (iColIndex < iPicWidth)
+                    iPic[iRowIndex][iColIndex++] = 0;
+                break;
+
+            default:
+
+                break;
+            }
+
+            strBufIndex = 0;
         }
     }
 }
