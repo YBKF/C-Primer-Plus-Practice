@@ -87,10 +87,13 @@ int CharInfo(int iCh, unsigned int *uiInfo)
 /**
  * - [in] uiOptions
  * - [out] pchStr
+ * - [out] pchChar
  * - [in] iMaxCount
  * - [in] file
  *
- * 根据 uiOptions 的参数
+ * 根据 uiOptions 参数设定的读取规则来依次连续读取指定文件 file 中的指定类型的字符，
+ * 符合规则的字符将存储到 pchStr 字符串中，直到遇到读取规则外的其他类型的字符或是到达读取上限 iMaxCount。
+ *
  * [in] uiOptions 支持的参数：
  * - PARSE_OTHERS (0x0001)
  * - PARSE_DIGIT (0x0002)
@@ -99,11 +102,39 @@ int CharInfo(int iCh, unsigned int *uiInfo)
  * - PARSE_EOF (0x0010)
  * 支持复合参数，如 "PARSE_DIGIT | PARSE_SPACE"
  *
+ * [out] pchStr 应当为一个指针，指向一串字符串，参数可为 NULL；
+ * 为 NULL 时，函数仅读取字符而不存储。
+ *
+ * [out] pchChar 存储函数返回时最后读取到的字符
+ *
+ * [in] iMaxCount
+ * 存储字符的数量上限
+ *
+ * [in] file
+ * 读取的文件
+ *
  * 调用成功返回 1
  * 发生错误时返回 0
  */
-int ParseAString(unsigned int uiOptions, char *pchStr, int iMaxCount, FILE *file)
+int ParseAString(unsigned int uiOptions, char *pchStr, int *pchChar, int iMaxCount, FILE *file)
 {
+    if (file == NULL)
+    {
+        fputs("ERROR: NULL File.\n", stderr);
+        return 0;
+    }
+
+    if (pchStr == NULL)
+    {
+        fputs("ERROR: NULL Pointer *pchStr\n", stderr);
+        return 0;
+    }
+
+    if (pchChar == NULL)
+    {
+        fputs("ERROR: NULL Pointer *pchChar\n", stderr);
+        return 0;
+    }
 }
 
 /**
