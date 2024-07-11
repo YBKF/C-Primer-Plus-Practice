@@ -32,11 +32,11 @@
 #define CHAR_IS_LF (0x0008)
 #define CHAR_IS_EOF (0x0010)
 
-#define PARSE_OTHERS (0x0001)
-#define PARSE_DIGIT (0x0002)
-#define PARSE_SPACE (0x0004)
-#define PARSE_LF (0x0008)
-#define PARSE_EOF (0x0010)
+#define PARSE_OTHERS CHAR_IS_OTHERS
+#define PARSE_DIGIT CHAR_IS_DIGIT
+#define PARSE_SPACE CHAR_IS_SPACE
+#define PARSE_LF CHAR_IS_LF
+#define PARSE_EOF CHAR_IS_EOF
 
 int CharInfo(int iCh, unsigned int *uiInfo);
 int parseCharPictureIntoIntArr(int iPicWidth, int iPicHeight, FILE *file, int iPic[][INT_PIC_WIDTH]);
@@ -84,6 +84,11 @@ int CharInfo(int iCh, unsigned int *uiInfo)
     return iCh;
 }
 
+int fun(char chPre,unsigned int uiOptions)
+{
+    
+}
+
 /**
  * - [in] uiOptions
  * - [out] pchStr
@@ -105,7 +110,8 @@ int CharInfo(int iCh, unsigned int *uiInfo)
  * [out] pchStr 应当为一个指针，指向一串字符串，参数可为 NULL；
  * 为 NULL 时，函数仅读取字符而不存储。
  *
- * [out] pchChar 存储函数返回时最后读取到的字符
+ * [out] pchChar 存储函数返回的返回原因，通常为最后读取到的字符，参数可为 NULL；
+ * 为 NULL 时，将不存储字符
  *
  * [in] iMaxCount
  * 存储字符的数量上限
@@ -116,7 +122,7 @@ int CharInfo(int iCh, unsigned int *uiInfo)
  * 调用成功返回 1
  * 发生错误时返回 0
  */
-int ParseAString(unsigned int uiOptions, char *pchStr, int *pchChar, int iMaxCount, FILE *file)
+int ParseAString(unsigned int uiOptions, char *pchStr, int *pchChar, unsigned int uiMaxCount, FILE *file)
 {
     if (file == NULL)
     {
@@ -124,16 +130,31 @@ int ParseAString(unsigned int uiOptions, char *pchStr, int *pchChar, int iMaxCou
         return 0;
     }
 
-    if (pchStr == NULL)
-    {
-        fputs("ERROR: NULL Pointer *pchStr\n", stderr);
-        return 0;
-    }
+    char *pchCurChar = pchStr;
+    int chBuf = 0;
 
-    if (pchChar == NULL)
+    unsigned int uiCharType = CHAR_IS_OTHERS;
+
+    for (unsigned int ui = 0; ui < uiMaxCount; ui++)
     {
-        fputs("ERROR: NULL Pointer *pchChar\n", stderr);
-        return 0;
+        chBuf = getc(file);
+        CharInfo(chBuf, uiCharType);
+
+        // parse options
+        if (uiCharType == (uiOptions & PARSE_DIGIT))
+            *pchCurChar++ = chBuf;
+        else if (uiCharType == (uiOptions & PARSE_SPACE))
+            *pchCurChar++ = chBuf;
+        else if (uiCharType == (uiOptions & PARSE_LF))
+            *pchCurChar++ = chBuf;
+        else if (uiCharType == (uiOptions & PARSE_EOF))
+            *pchCurChar++ = chBuf;
+        else if (uiCharType == (uiOptions & PARSE_OTHERS))
+            *pchCurChar++ = chBuf;
+            else
+            {
+
+            }
     }
 }
 
