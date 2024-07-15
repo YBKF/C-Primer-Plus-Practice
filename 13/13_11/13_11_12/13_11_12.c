@@ -10,9 +10,6 @@
  * 最后，程序显示最终的图片（即，打印所有的字符串），并将结果储存在文本文件中。
  */
 
-/**
- * 首先，读取文件中的一行，尝试将此行的所有数字字符转换为整型，读到单行字符上限（30）为止，重复调用至要求的次数（20）；
- */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,6 +17,7 @@
 
 #define INT_PIC_WIDTH (30)
 #define INT_PIC_HEIGHT (20)
+
 #define CHAR_PIC_WIDTH INT_PIC_WIDTH
 #define CHAR_PIC_WIDTH_SIZE (CHAR_PIC_WIDTH + 1)
 #define CHAR_PIC_HEIGHT INT_PIC_HEIGHT
@@ -43,7 +41,10 @@
 int CharInfo(int iCh, unsigned int *uiInfo);
 int isCharOnWhitelist(const char chPre, const unsigned int uiWhitelist);
 int ParseAString(unsigned int uiOptions, char pchStr[], int *pchChar, unsigned int uiMaxCount, FILE *file);
-int parseCharPictureIntoIntArr(int iPicWidth, int iPicHeight, int (*iPic)[INT_PIC_WIDTH], FILE *file);
+int parseCharSourceIntoIntArr(int iPicWidth, int iPicHeight, int (*iPic)[INT_PIC_WIDTH], FILE *file);
+
+char transInt2CharPixel(int i);
+int transIntPic2CharPic(int iPicWidth, int iPicHeight, int (*iPic)[INT_PIC_WIDTH], char (*chPic)[CHAR_PIC_WIDTH_SIZE]);
 
 /**
  * 源文件：字符形式存在的数字
@@ -53,19 +54,22 @@ int parseCharPictureIntoIntArr(int iPicWidth, int iPicHeight, int (*iPic)[INT_PI
 int main()
 {
     int iPic[INT_PIC_HEIGHT][INT_PIC_WIDTH];
+    char chPic[CHAR_PIC_HEIGHT][CHAR_PIC_WIDTH_SIZE];
     int iCountTotalSaved;
-    char *filename = "pic.test";
-    FILE *fp;
+    char *filenameIn = "pic.test";
+    char *filenameOut = "picOut.test";
+    FILE *fileIn;
+    FILE *fileOut;
 
-    if ((fp = fopen(filename, "r")) == NULL)
+    if ((fileIn = fopen(filenameIn, "r")) == NULL)
     {
-        fprintf(stderr, "ERROR: Cannot open file: %s\n", filename);
+        fprintf(stderr, "ERROR: Cannot open file: %s\n", filenameIn);
         exit(EXIT_FAILURE);
     }
 
     memset(iPic, 0, sizeof(int) * INT_PIC_WIDTH * INT_PIC_HEIGHT);
 
-    iCountTotalSaved = parseCharPictureIntoIntArr(INT_PIC_WIDTH, INT_PIC_HEIGHT, iPic, fp);
+    iCountTotalSaved = parseCharSourceIntoIntArr(INT_PIC_WIDTH, INT_PIC_HEIGHT, iPic, fileIn);
     if (iCountTotalSaved != (INT_PIC_HEIGHT * INT_PIC_WIDTH))
     {
         if (iCountTotalSaved == 0)
@@ -74,16 +78,36 @@ int main()
             fputs("WARNING: Illegal file, read attempted.\n", stderr);
     }
 
-    for (int h = 0; h < INT_PIC_HEIGHT; h++)
+    // for (int h = 0; h < INT_PIC_HEIGHT; h++)
+    // {
+    //     for (int w = 0; w < INT_PIC_WIDTH; w++)
+    //     {
+    //         printf("%d ", iPic[h][w]);
+    //     }
+    //     putchar('\n');
+    // }
+
+    transIntPic2CharPic(CHAR_PIC_WIDTH, CHAR_PIC_HEIGHT, iPic, chPic);
+
+    if ((fileOut = fopen(filenameOut, "w")) == NULL)
     {
-        for (int w = 0; w < INT_PIC_WIDTH; w++)
-        {
-            printf("%d ", iPic[h][w]);
-        }
-        putchar('\n');
+        fprintf(stderr, "ERROR: Cannot open file: %s\n", filenameOut);
+        exit(EXIT_FAILURE);
     }
 
-    fclose(fp);
+    for (int h = 0; h < CHAR_PIC_HEIGHT; h++)
+    {
+        for (int w = 0; w < CHAR_PIC_WIDTH; w++)
+        {
+            putc(chPic[h][w], fileOut);
+            putc(chPic[h][w], stdout);
+        }
+        putc('\n', fileOut);
+        putc('\n', stdout);
+    }
+
+    fclose(fileOut);
+    fclose(fileIn);
 
     return 0;
 }
@@ -196,7 +220,6 @@ int ParseAString(unsigned int uiOptions, char pchStr[], int *pchChar, unsigned i
     int isNULLpchStr = 0;
     int isNULLpchChar = 0;
     int dontSkip = 0;
-    // int iFilterRetVal;
 
     if (pchStr == NULL)
         isNULLpchStr = 1;
@@ -285,7 +308,7 @@ int ParseAString(unsigned int uiOptions, char pchStr[], int *pchChar, unsigned i
  * 读取完毕后将返回成功读取到的元素的数量，
  * 读取过程中遇到任何错误则报告错误并返回当前已读取到的值
  */
-int parseCharPictureIntoIntArr(int iPicWidth, int iPicHeight, int (*iPic)[INT_PIC_WIDTH], FILE *file)
+int parseCharSourceIntoIntArr(int iPicWidth, int iPicHeight, int (*iPic)[INT_PIC_WIDTH], FILE *file)
 {
     if (file == NULL)
     {
@@ -295,7 +318,7 @@ int parseCharPictureIntoIntArr(int iPicWidth, int iPicHeight, int (*iPic)[INT_PI
 
     if (iPic == NULL)
     {
-        fputs("ERROR: NULL Pointer.\n", stderr);
+        fputs("ERROR: NULL Pointer iPic at function parseCharSourceIntoIntArr.\n", stderr);
         return 0;
     }
 
@@ -415,4 +438,44 @@ int parseCharPictureIntoIntArr(int iPicWidth, int iPicHeight, int (*iPic)[INT_PI
     }
 
     return iCountTotalSaved;
+}
+
+char transInt2CharPixel(int i)
+{
+    // if (i >= 0 && i <= 9)
+    //     return (char)(i += ' ');
+    // else
+    //     return 0;
+
+    return (i >= 0 && i <= 9) ? (char)(i += ' ') : (char)0;
+}
+
+int transIntPic2CharPic(int iPicWidth, int iPicHeight, int (*iPic)[INT_PIC_WIDTH], char (*chPic)[CHAR_PIC_WIDTH_SIZE])
+{
+    if (iPic == NULL)
+    {
+        fputs("ERROR: NULL Pointer iPic at function transIntPic2CharPic.\n", stderr);
+        return 0;
+    }
+
+    if (chPic == NULL)
+    {
+        fputs("ERROR: NULL Pointer chPic at function transIntPic2CharPic.\n", stderr);
+        return 0;
+    }
+
+    if (iPicWidth <= 0 || iPicHeight <= 0)
+        return 0;
+
+    int iRowIndex, iColumnIndex;
+
+    for (iRowIndex = 0; iRowIndex < iPicHeight; iRowIndex++)
+    {
+        for (iColumnIndex = 0; iColumnIndex < iPicWidth; iColumnIndex++)
+            chPic[iRowIndex][iColumnIndex] = transInt2CharPixel(iPic[iRowIndex][iColumnIndex]);
+
+        chPic[iRowIndex][iColumnIndex + 1] = '\0';
+    }
+
+    return 1;
 }
