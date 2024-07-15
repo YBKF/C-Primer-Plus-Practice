@@ -63,14 +63,15 @@ int main()
         exit(EXIT_FAILURE);
     }
 
-    iCountTotalSaved = parseCharPictureIntoIntArr(INT_PIC_WIDTH, INT_PIC_HEIGHT, iPic, fp);
+    memset(iPic, 0, sizeof(int) * INT_PIC_WIDTH * INT_PIC_HEIGHT);
 
+    iCountTotalSaved = parseCharPictureIntoIntArr(INT_PIC_WIDTH, INT_PIC_HEIGHT, iPic, fp);
     if (iCountTotalSaved != (INT_PIC_HEIGHT * INT_PIC_WIDTH))
     {
         if (iCountTotalSaved == 0)
             fputs("WARNING: Failed to parse the file.\n", stderr);
         else
-            fputs("WARNING: Unrecognized file.\n", stderr);
+            fputs("WARNING: Illegal file, read attempted.\n", stderr);
     }
 
     for (int h = 0; h < INT_PIC_HEIGHT; h++)
@@ -81,6 +82,8 @@ int main()
         }
         putchar('\n');
     }
+
+    fclose(fp);
 
     return 0;
 }
@@ -157,8 +160,9 @@ int isCharOnWhitelist(const char chPre, const unsigned int uiWhitelist)
  * 如果参数中未设置 DONT_SKIP，开始正式读取前将默认跳过所有不在白名单中的字符类型，直到遇到白名单字符类型或到达文件结尾，
  * 如果在正式读取前便遇到文件结尾，则返回 EOF。
  *
- * 调用成功返回 1
- * 发生错误时返回 0
+ * 成功读取时返回 1
+ * 未读取到单词或遇到错误时返回 0
+ * 其他返回原因时 返回值 > 1
  *
  * [in] uiOptions 支持的参数：
  * - DONT_SKIP (0x1000)
@@ -206,11 +210,11 @@ int ParseAString(unsigned int uiOptions, char pchStr[], int *pchChar, unsigned i
     char *pchCurChar = pchStr;
     int chBuf = 0;
 
-    // 开始正式读取前将默认跳过所有不在白名单中的字符类型
+    // 开始正式读取前将默认跳过所有不在白名单中的字符类型，并检测当前行是否有还有有效字符（是否检测到换行符）
     if (!dontSkip)
     {
         // 跳过所有不在白名单中的字符类型，直到遇到白名单字符类型或到达文件结尾
-        while (!isCharOnWhitelist(chBuf = getc(file), uiOptions | PARSE_EOF))
+        while (!isCharOnWhitelist(chBuf = getc(file), uiOptions | PARSE_LF | PARSE_EOF))
             continue;
 
         if (chBuf == EOF)
@@ -221,7 +225,17 @@ int ParseAString(unsigned int uiOptions, char pchStr[], int *pchChar, unsigned i
                 return 0;
             }
             else
+            {
+                if (!isNULLpchChar)
+                    *pchChar = chBuf;
                 return EOF; // 正式读取前就遇到文件结尾，则返回 EOF
+            }
+        }
+        else if (chBuf == '\n') // 遇到换行符，表示本行无有效字符，返回
+        {
+            if (!isNULLpchChar)
+                *pchChar = chBuf;
+            return chBuf;
         }
 
         // 若 chBuf 缓存中的字符类型在函数设置的白名单中，则将此字符重新放回流中
@@ -289,6 +303,7 @@ int parseCharPictureIntoIntArr(int iPicWidth, int iPicHeight, int (*iPic)[INT_PI
         return 0;
 
     /**
+     * 大致流程：
      * *1:  首先，检测 [二维整型数组表示列的下标] 是否小于要求的长度(iPicWidth)；
      * *a1:     小于要求的长度(iPicWidth)，则从文件中读取一个字符并把这个字符存储到一个临时的 [字符缓存] 中，
      * *a2:     然后，检测 [字符缓存] 中的字符是否为数字字符，且 [字符串缓存下标] 是否小于 [字符串缓存的大小]；
@@ -339,38 +354,49 @@ int parseCharPictureIntoIntArr(int iPicWidth, int iPicHeight, int (*iPic)[INT_PI
             // 在循环开始处设置文件结尾标志检测；若 isEOF 为真，则表示文件已读到结尾但是 iPic 数组仍未满，则将此行元素填充为 0
             if (isEOF)
             {
-                while (iColIndex < iPicWidth)
-                    iPic[iRowIndex][iColIndex++] = 0;
+                memset(&iPic[iRowIndex][iColIndex], 0, sizeof(int) * (size_t)(iPicWidth - iColIndex));
                 break;
             }
 
-            if ((iRetVal = ParseAString(PARSE_DIGIT, strBuf, &chBuf, CHAR_PIC_STR_BUF_LENGTH, file)) == 0)
+            // 获取一串字符串
+            iRetVal = ParseAString(PARSE_DIGIT, strBuf, &chBuf, CHAR_PIC_STR_BUF_LENGTH, file);
+
+            if (iRetVal == 1) // 字符串读取成功时，将字符串缓存转换为整型
+            {
+                iPic[iRowIndex][iColIndex] = atoi(strBuf);
+                iCountTotalSaved++;
+            }
+            else if (iRetVal == EOF) // iRetVal == EOF 表示函数在开始读取前便遇到文件结尾， strBuf 中未存储任何字符
+            {
+                fputs("WARNING: Got EOF before reading a string.\n", stderr);
+            }
+            else if (iRetVal == 0)
             {
                 fputs("ERROR: An error occurred while parsing a string from the file.\n", stderr);
                 return 0;
             }
 
-            // iRetVal == EOF 表示函数在开始读取前便遇到文件结尾， strBuf 中未存储任何字符
-            if (iRetVal == EOF)
-                return iCountTotalSaved;
-
-            iPic[iRowIndex][iColIndex] = atoi(strBuf);
-            iCountTotalSaved++;
-
             if (chBuf == '\n') // 缓存中为换行符表示已读完文件中的一行
             {
                 // 若 iColIndex < iPicWidth 表示 iPic 数组的当前行未存储满，将此行未赋值元素填充为 0
-                while (iColIndex < iPicWidth)
-                    iPic[iRowIndex][iColIndex++] = 0;
+                if (iColIndex < iPicWidth)
+                {
+                    if (iRetVal == 1)
+                        iColIndex++;
+                    memset(&iPic[iRowIndex][iColIndex], 0, sizeof(int) * (size_t)(iPicWidth - iColIndex));
+                }
                 break;
             }
             else if (chBuf == EOF)
             {
                 isEOF = 1;
-
                 // 若 iColIndex < iPicWidth 表示 iPic 数组的当前行未存储满，将此行未赋值元素填充为 0
-                while (iColIndex < iPicWidth)
-                    iPic[iRowIndex][iColIndex++] = 0;
+                if (iColIndex < iPicWidth)
+                {
+                    if (iRetVal == 1)
+                        iColIndex++;
+                    memset(&iPic[iRowIndex][iColIndex], 0, sizeof(int) * (size_t)(iPicWidth - iColIndex));
+                }
                 break;
             }
             else if (isdigit(chBuf))
@@ -378,11 +404,13 @@ int parseCharPictureIntoIntArr(int iPicWidth, int iPicHeight, int (*iPic)[INT_PI
                 /* 若缓存 chBuf 中为数字字符，则表示数字字符串 strBuf 读到数组大小的上限 CHAR_PIC_STR_BUF_LENGTH 后依旧有连续的数字字符，
                 此时抛弃这些数字字符，直到遇到一个空格、换行符或到达文件结尾 */
                 int discard;
-                while (discard = getc(file))
+                while (1)
+                {
+                    discard = getc(file);
                     if (discard == ' ' || discard == '\n' || discard == EOF)
                         break;
+                }
             }
-            // TODO 处理空格之类的其他字符
         }
     }
 
