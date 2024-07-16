@@ -106,8 +106,17 @@ int main()
         putc('\n', stdout);
     }
 
-    fclose(fileOut);
-    fclose(fileIn);
+    int fcRetO, fcRetI;
+    if (((fcRetO = fclose(fileOut)) | (fcRetI = fclose(fileIn))) != 0)
+    {
+        if (fcRetO != 0)
+            fprintf(stderr, "ERROR: Error in closing file: %s\n", filenameOut);
+
+        if (fcRetI != 0)
+            fprintf(stderr, "ERROR: Error in closing file: %s\n", filenameIn);
+
+        exit(EXIT_FAILURE);
+    }
 
     return 0;
 }
