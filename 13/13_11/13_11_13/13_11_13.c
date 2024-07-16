@@ -7,15 +7,15 @@
 #include <string.h>
 #include <ctype.h>
 
-#define INT_PIC_WIDTH (30)
-#define INT_PIC_HEIGHT (20)
+const int INT_PIC_HEIGHT = 20;
+const int INT_PIC_WIDTH = 30;
 
-#define CHAR_PIC_WIDTH INT_PIC_WIDTH
-#define CHAR_PIC_WIDTH_SIZE (CHAR_PIC_WIDTH + 1)
-#define CHAR_PIC_HEIGHT INT_PIC_HEIGHT
-#define CHAR_PIC_PIXEL_SIZE (4)
-#define CHAR_PIC_STR_BUF_SIZE CHAR_PIC_PIXEL_SIZE
-#define CHAR_PIC_STR_BUF_LENGTH (CHAR_PIC_STR_BUF_SIZE - 1)
+const int CHAR_PIC_WIDTH = INT_PIC_WIDTH;
+const int CHAR_PIC_WIDTH_SIZE = CHAR_PIC_WIDTH + 1;
+const int CHAR_PIC_HEIGHT = INT_PIC_HEIGHT;
+const int CHAR_PIC_PIXEL_SIZE = 4;
+const int CHAR_PIC_STR_BUF_SIZE = CHAR_PIC_PIXEL_SIZE;
+const int CHAR_PIC_STR_BUF_LENGTH = CHAR_PIC_STR_BUF_SIZE - 1;
 
 #define CHAR_IS_OTHERS (0x0001)
 #define CHAR_IS_DIGIT (0x0002)
@@ -32,17 +32,12 @@
 
 int CharInfo(int iCh, unsigned int *uiInfo);
 int isCharOnWhitelist(const char chPre, const unsigned int uiWhitelist);
-int ParseAString(unsigned int uiOptions, char pchStr[], int *pchChar, unsigned int uiMaxCount, FILE *file);
-int parseCharSourceIntoIntArr(int iPicWidth, int iPicHeight, int (*iPic)[INT_PIC_WIDTH], FILE *file);
+int ParseAString(unsigned int uiOptions, unsigned int uiMaxCount, char pchStr[uiMaxCount + 1], int *pchChar, FILE *file);
+int parseCharSourceIntoIntArr(int iPicHeight, int iPicWidth, int iPic[iPicHeight][iPicWidth], FILE *file);
 
 char transInt2CharPixel(int i);
-int transIntPic2CharPic(int iPicWidth, int iPicHeight, int (*iPic)[INT_PIC_WIDTH], char (*chPic)[CHAR_PIC_WIDTH_SIZE]);
+int transIntPic2CharPic(int iPicHeight, int iPicWidth, int iPic[iPicHeight][iPicWidth], char chPic[iPicHeight][iPicWidth + 1]);
 
-/**
- * 源文件：字符形式存在的数字
- * 数字图：纯整型
- * 字符图：（数字转换为字符后的）字符
- */
 int main()
 {
     int iPic[INT_PIC_HEIGHT][INT_PIC_WIDTH];
@@ -61,7 +56,7 @@ int main()
 
     memset(iPic, 0, sizeof(int) * INT_PIC_WIDTH * INT_PIC_HEIGHT);
 
-    iCountTotalSaved = parseCharSourceIntoIntArr(INT_PIC_WIDTH, INT_PIC_HEIGHT, iPic, fileIn);
+    iCountTotalSaved = parseCharSourceIntoIntArr(INT_PIC_HEIGHT, INT_PIC_WIDTH, iPic, fileIn);
     if (iCountTotalSaved != (INT_PIC_HEIGHT * INT_PIC_WIDTH))
     {
         if (iCountTotalSaved == 0)
@@ -79,7 +74,7 @@ int main()
     //     putchar('\n');
     // }
 
-    transIntPic2CharPic(CHAR_PIC_WIDTH, CHAR_PIC_HEIGHT, iPic, chPic);
+    transIntPic2CharPic(CHAR_PIC_HEIGHT, CHAR_PIC_WIDTH, iPic, chPic);
 
     if ((fileOut = fopen(filenameOut, "w")) == NULL)
     {
@@ -98,8 +93,17 @@ int main()
         putc('\n', stdout);
     }
 
-    fclose(fileOut);
-    fclose(fileIn);
+    int fcRetO, fcRetI;
+    if (((fcRetO = fclose(fileOut)) | (fcRetI = fclose(fileIn))) != 0)
+    {
+        if (fcRetO != 0)
+            fprintf(stderr, "ERROR: Error in closing file: %s\n", filenameOut);
+
+        if (fcRetI != 0)
+            fprintf(stderr, "ERROR: Error in closing file: %s\n", filenameIn);
+
+        exit(EXIT_FAILURE);
+    }
 
     return 0;
 }
@@ -166,9 +170,9 @@ int isCharOnWhitelist(const char chPre, const unsigned int uiWhitelist)
 
 /**
  * - [in] uiOptions
+ * - [in] iMaxCount
  * - [out] pchStr
  * - [out] pchChar
- * - [in] iMaxCount
  * - [in] file
  *
  * 根据 uiOptions 参数设定的读取规则来依次连续读取指定文件 file 中的指定类型的字符，
@@ -201,7 +205,7 @@ int isCharOnWhitelist(const char chPre, const unsigned int uiWhitelist)
  * [in] file
  * 读取的文件
  */
-int ParseAString(unsigned int uiOptions, char pchStr[], int *pchChar, unsigned int uiMaxCount, FILE *file)
+int ParseAString(unsigned int uiOptions, unsigned int uiMaxCount, char pchStr[uiMaxCount + 1], int *pchChar, FILE *file)
 {
     if (file == NULL)
     {
@@ -258,7 +262,7 @@ int ParseAString(unsigned int uiOptions, char pchStr[], int *pchChar, unsigned i
             ungetc(chBuf, file);
     }
 
-    for (unsigned int ui = 0; ui < uiMaxCount; ui++)
+    for (unsigned int ui = 0; ui <= uiMaxCount; ui++)
     {
         chBuf = getc(file);
         if (ferror(file))
@@ -300,7 +304,7 @@ int ParseAString(unsigned int uiOptions, char pchStr[], int *pchChar, unsigned i
  * 读取完毕后将返回成功读取到的元素的数量，
  * 读取过程中遇到任何错误则报告错误并返回当前已读取到的值
  */
-int parseCharSourceIntoIntArr(int iPicWidth, int iPicHeight, int (*iPic)[INT_PIC_WIDTH], FILE *file)
+int parseCharSourceIntoIntArr(int iPicHeight, int iPicWidth, int iPic[iPicHeight][iPicWidth], FILE *file)
 {
     if (file == NULL)
     {
@@ -374,7 +378,7 @@ int parseCharSourceIntoIntArr(int iPicWidth, int iPicHeight, int (*iPic)[INT_PIC
             }
 
             // 获取一串字符串
-            iRetVal = ParseAString(PARSE_DIGIT, strBuf, &chBuf, CHAR_PIC_STR_BUF_LENGTH, file);
+            iRetVal = ParseAString(PARSE_DIGIT, CHAR_PIC_STR_BUF_LENGTH, strBuf, &chBuf, file);
 
             if (iRetVal == 1) // 字符串读取成功时，将字符串缓存转换为整型
             {
@@ -442,7 +446,7 @@ char transInt2CharPixel(int i)
     return (i >= 0 && i <= 9) ? (char)(i += ' ') : (char)0;
 }
 
-int transIntPic2CharPic(int iPicWidth, int iPicHeight, int (*iPic)[INT_PIC_WIDTH], char (*chPic)[CHAR_PIC_WIDTH_SIZE])
+int transIntPic2CharPic(int iPicHeight, int iPicWidth, int iPic[iPicHeight][iPicWidth], char chPic[iPicHeight][iPicWidth + 1])
 {
     if (iPic == NULL)
     {
