@@ -705,7 +705,7 @@ int reduceDistortionIntPic(int iPicWidth, int iPicHeight, const int (*iPicSource
             }
 
             if (isNeighbourDiffBiggerThan(DISTORTION_TOLERANCE, RowIndex, ColIndex, iPicSource, uiExistNeiElem) && iNeiElemCount != 0)
-                iPicProcessed[RowIndex][ColIndex] = sumNeighbourVal(RowIndex, ColIndex, iPicSource, uiExistNeiElem) / iNeiElemCount;
+                iPicProcessed[RowIndex][ColIndex] = (int)round((double)sumNeighbourVal(RowIndex, ColIndex, iPicSource, uiExistNeiElem) / (double)iNeiElemCount);
             else
                 iPicProcessed[RowIndex][ColIndex] = iPicSource[RowIndex][ColIndex];
         }
