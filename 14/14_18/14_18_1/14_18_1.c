@@ -13,8 +13,15 @@
  * 以及月份号。
  */
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 
-unsigned int howManyDaysFromBeginningOfAYearTo(char *strMonthWord);
+#define STR_MONTH_SIZE (10)
+#define STR_MONTH_LENGTH (STR_MONTH_SIZE - 1)
+
+char *s_gets(char *str, int maxCount);
+unsigned int howManyDaysFromBeginningOfAYearTo(const char *strMonthWord);
 
 typedef struct month
 {
@@ -22,6 +29,22 @@ typedef struct month
     unsigned int days;
     unsigned int monthNum;
 } MONTH;
+
+// enum MonthNumber
+// {
+//     January = 1,
+//     February,
+//     March,
+//     April,
+//     May,
+//     June,
+//     July,
+//     August,
+//     September,
+//     October,
+//     November,
+//     December
+// };
 
 MONTH monthSet[12] = {
     {"JAN", 31, 1},
@@ -38,13 +61,102 @@ MONTH monthSet[12] = {
     {"DEC", 31, 12}};
 
 // TODO 将输入转换为与月份对应的数字（数组下标），使用 for 循环
-int main(int argc, char const *argv[])
+int main()
 {
-    
+    char strMonthName[STR_MONTH_SIZE];
+    unsigned int uiDays;
+
+    fprintf(stdout, "Please enter the name of a month:\n");
+    s_gets(strMonthName, STR_MONTH_LENGTH);
+
+    if ((uiDays = howManyDaysFromBeginningOfAYearTo(strMonthName)) == 0)
+    {
+        fprintf(stderr, "Please enter a correct name of a month.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    fprintf(stdout, "How many days are there from the beginning of a year to %s?\n", strMonthName);
+    fprintf(stdout, "%u days.\n", uiDays);
 
     return 0;
 }
 
-unsigned int howManyDaysFromBeginningOfAYearTo(char *strMonthWord)
+char *s_gets(char *str, int maxCount)
 {
+    char *ret_val;
+    char *find;
+
+    ret_val = fgets(str, maxCount, stdin);
+    if (ret_val != NULL)
+    {
+        find = strchr(str, '\n');
+        if (find)
+            *find = '\0';
+        else
+            while (getchar() != '\n')
+                continue;
+    }
+
+    return ret_val;
+}
+
+/**
+ * january
+ * february
+ * march
+ * april
+ * may
+ * june
+ * july
+ * august
+ * september
+ * october
+ * november
+ * december
+ */
+unsigned int howManyDaysFromBeginningOfAYearTo(const char *strMonthWord)
+{
+    if (strMonthWord == NULL)
+        return 0;
+
+    int iMonNum = 0;
+    unsigned int uiTotal = 0;
+    int iMonthNameLength = strlen(strMonthWord);
+
+    char strMonthLowered[STR_MONTH_SIZE];
+
+    for (int i = 0; i < iMonthNameLength; i++)
+        strMonthLowered[i] = tolower(strMonthWord[i]);
+
+    if (strcmp(strMonthLowered, "january") == 0)
+        iMonNum = 1;
+    else if (strcmp(strMonthLowered, "february") == 0)
+        iMonNum = 2;
+    else if (strcmp(strMonthLowered, "march") == 0)
+        iMonNum = 3;
+    else if (strcmp(strMonthLowered, "april") == 0)
+        iMonNum = 4;
+    else if (strcmp(strMonthLowered, "may") == 0)
+        iMonNum = 5;
+    else if (strcmp(strMonthLowered, "june") == 0)
+        iMonNum = 6;
+    else if (strcmp(strMonthLowered, "july") == 0)
+        iMonNum = 7;
+    else if (strcmp(strMonthLowered, "august") == 0)
+        iMonNum = 8;
+    else if (strcmp(strMonthLowered, "september") == 0)
+        iMonNum = 9;
+    else if (strcmp(strMonthLowered, "october") == 0)
+        iMonNum = 10;
+    else if (strcmp(strMonthLowered, "november") == 0)
+        iMonNum = 11;
+    else if (strcmp(strMonthLowered, "december") == 0)
+        iMonNum = 12;
+    else
+        return 0;
+
+    for (int i = 0; i < iMonNum; i++)
+        uiTotal += monthSet[i].days;
+
+    return uiTotal;
 }
