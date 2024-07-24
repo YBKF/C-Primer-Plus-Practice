@@ -46,7 +46,7 @@ typedef struct month
 //     December
 // };
 
-MONTH monthSet[12] = {
+MONTH monthArr[12] = {
     {"JAN", 31, 1},
     {"FEB", 28, 2},
     {"MAR", 31, 3},
@@ -67,7 +67,7 @@ int main()
     unsigned int uiDays;
 
     fprintf(stdout, "Please enter the name of a month:\n");
-    s_gets(strMonthName, STR_MONTH_LENGTH);
+    s_gets(strMonthName, STR_MONTH_SIZE);
 
     if ((uiDays = howManyDaysFromBeginningOfAYearTo(strMonthName)) == 0)
     {
@@ -156,7 +156,7 @@ unsigned int howManyDaysFromBeginningOfAYearTo(const char *strMonthWord)
         return 0;
 
     for (int i = 0; i < iMonNum; i++)
-        uiTotal += monthSet[i].days;
+        uiTotal += monthArr[i].days;
 
     return uiTotal;
 }
