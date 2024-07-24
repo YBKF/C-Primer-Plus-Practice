@@ -51,30 +51,10 @@ MONTH monthArr[12] = {
 
 int main()
 {
-    DATE dateSelected;
-    char strMonth[MONTH_NAME_SIZE];
-    char strMonthLowered[MONTH_NAME_SIZE];
-    int iMonthParsed = 0;
-    int isMonthGot = 0;
-
-    fputs("Please enter a date(Y/M/D),\n", stdout);
-    fputs("Year: ", stdout);
-    if (scanf("%d", &dateSelected.year) != 1)
+    if (start() == 0)
     {
-        fputs("ERROR: An error occurred while entering the number of a year.\n", stderr);
         exit(EXIT_FAILURE);
     }
-
-    fputs("Month: ", stdout);
-    s_gets(strMonth, MONTH_NAME_SIZE);
-
-    if ((iMonthParsed = parseStrMonth2IntNum(strMonth)) == 0)
-    {
-        fputs("ERROR: An error occurred while parsing the month.\n", stderr);
-        exit(EXIT_FAILURE);
-    }
-
-    dateSelected.month = monthArr[iMonthParsed];
 
     return 0;
 }
@@ -184,9 +164,25 @@ int parseStrMonth2IntNum(const char *strMonth, const MONTH *monthArr)
         {
             for (uiNum = 0; uiNum < 12; uiNum++)
             {
+                if (strcmp(monthArr[uiNum].abbr, strMonthBuf) == 0)
+                    return uiNum;
             }
+            // abbr 匹配不成功的情况
+            return 0;
+        }
+        else
+        {
+            for (uiNum = 0; uiNum < 12; uiNum++)
+            {
+                if (strcmp(monthArr[uiNum].name, strMonthBuf) == 0)
+                    return uiNum;
+            }
+            // abbr 匹配不成功的情况
+            return 0;
         }
     }
+    else
+        return 0;
 }
 
 unsigned int getDaysFromTheBeginningOfAYearTo(DATE *date, const MONTH *monthArr)
@@ -213,6 +209,9 @@ int start()
         fputs("ERROR: An error occurred while entering the number of a year.\n", stderr);
         return 0;
     }
+
+    while (getchar() != '/n')
+        continue;
 
     if (isLeapYear(dateSelected.year))
         monthArr[1].days = 29;
