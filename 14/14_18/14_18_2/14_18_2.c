@@ -28,6 +28,7 @@ typedef struct date
 } DATE;
 
 char *s_gets(char *str, int maxCount);
+MONTH *monthArrCpy(MONTH *monthTarget, const MONTH *monthSource, const int iCount);
 int isLeapYear(int iYear);
 void transStrToLowerCase(char *str);
 int parseStrMonth2IntNum(const char *strMonth, const MONTH *monthArr);
@@ -35,7 +36,7 @@ unsigned int getDaysFromTheBeginningOfAYearTo(DATE *date, const MONTH *monthArr)
 
 int start();
 
-MONTH monthArr[12] = {
+const MONTH monthArr[12] = {
     {"January", "JAN", 1, 31},
     {"February", "FEB", 2, 28},
     {"March", "MAR", 3, 31},
@@ -52,9 +53,7 @@ MONTH monthArr[12] = {
 int main()
 {
     if (start() == 0)
-    {
-        exit(EXIT_FAILURE);
-    }
+        return EXIT_FAILURE;
 
     return 0;
 }
@@ -95,6 +94,25 @@ char *s_gets(char *s, int n)
     return s;
 }
 
+MONTH *monthArrCpy(MONTH *monthTarget, const MONTH *monthSource, const int iCount)
+{
+    if (monthTarget == NULL || monthSource == NULL)
+    {
+        fputs("ERROR: Found a null pointer at monthArrCpy", stderr);
+        return NULL;
+    }
+
+    if (iCount < 0)
+    {
+        fputs("ERROR: Count of the MONTH array less than 0.\n", stderr);
+        return NULL;
+    }
+
+    for (int i = 0; i < iCount; i++)
+        monthTarget[i] = monthSource[i];
+
+    return monthTarget;
+}
 int isLeapYear(int iYear)
 {
     if (iYear < 0)
@@ -118,9 +136,9 @@ int isLeapYear(int iYear)
 
 void transStrToLowerCase(char *str)
 {
-    if (str = NULL)
+    if (str == NULL)
     {
-        fputs("ERROR: Null pointer at transStrToLowerCase", stderr);
+        fputs("ERROR: Found a null pointer at transStrToLowerCase", stderr);
         return;
     }
 
@@ -134,7 +152,7 @@ int parseStrMonth2IntNum(const char *strMonth, const MONTH *monthArr)
 {
     if (strMonth == NULL)
     {
-        fputs("ERROR: Null pointer at parseStrMonth2IntNum", stderr);
+        fputs("ERROR: Found a null pointer at parseStrMonth2IntNum", stderr);
         return 0;
     }
 
@@ -153,7 +171,7 @@ int parseStrMonth2IntNum(const char *strMonth, const MONTH *monthArr)
     {
         iParsed = atoi(strMonthBuf);
         if (iParsed <= 12)
-            return iParsed;
+            return (iParsed - 1); // 用作数组下标需 - 1
         else
             return 0;
     }
@@ -164,20 +182,26 @@ int parseStrMonth2IntNum(const char *strMonth, const MONTH *monthArr)
         {
             for (uiNum = 0; uiNum < 12; uiNum++)
             {
-                if (strcmp(monthArr[uiNum].abbr, strMonthBuf) == 0)
+                char strMonthAbbrBuf[MONTH_NAME_ABBR_SIZE];
+                strcpy(strMonthAbbrBuf, monthArr[uiNum].abbr);
+                transStrToLowerCase(strMonthAbbrBuf);
+                if (strcmp(strMonthAbbrBuf, strMonthBuf) == 0)
                     return uiNum;
             }
-            // abbr 匹配不成功的情况
+            // abbr 匹配不成功的情况，return 0
             return 0;
         }
         else
         {
             for (uiNum = 0; uiNum < 12; uiNum++)
             {
-                if (strcmp(monthArr[uiNum].name, strMonthBuf) == 0)
+                char strMonthNameBuf[MONTH_NAME_SIZE];
+                strcpy(strMonthNameBuf, monthArr[uiNum].name);
+                transStrToLowerCase(strMonthNameBuf);
+                if (strcmp(strMonthNameBuf, strMonthBuf) == 0)
                     return uiNum;
             }
-            // abbr 匹配不成功的情况
+            // abbr 匹配不成功的情况，return 0
             return 0;
         }
     }
@@ -187,6 +211,26 @@ int parseStrMonth2IntNum(const char *strMonth, const MONTH *monthArr)
 
 unsigned int getDaysFromTheBeginningOfAYearTo(DATE *date, const MONTH *monthArr)
 {
+    if (date == NULL || monthArr == NULL)
+    {
+        fputs("ERROR: Found a null pointer at getDaysFromTheBeginningOfAYearTo", stderr);
+        return 0;
+    }
+
+    unsigned int uiTotalDays = 0;
+
+    if (date->month.number == 1) // isOnlyJanuary = TRUE
+    {
+        uiTotalDays = date->day;
+    }
+    else
+    {
+        for (unsigned int ui = 0; ui < (date->month.number - 1); ui++)
+            uiTotalDays += monthArr[ui].days;
+        uiTotalDays += date->day;
+    }
+
+    return uiTotalDays;
 }
 
 int start()
@@ -195,26 +239,24 @@ int start()
     char strMonth[MONTH_NAME_SIZE];
     char strMonthLowered[MONTH_NAME_SIZE];
     int iMonthParsed = 0;
-    int isMonthGot = 0;
-
-    MONTH monthArrDummy[12];
-
-    for (int i = 0; i < 12; i++)
-        monthArrDummy[i] = monthArr[i];
+    unsigned int uiDays = 0;
 
     fputs("Please enter a date(Y/M/D),\n", stdout);
+
     fputs("Year: ", stdout);
     if (scanf("%d", &dateSelected.year) != 1)
     {
         fputs("ERROR: An error occurred while entering the number of a year.\n", stderr);
         return 0;
     }
-
-    while (getchar() != '/n')
+    while (getchar() != '\n')
         continue;
 
+    MONTH monthArrDummy[12];
+    monthArrCpy(monthArrDummy, monthArr, 12); // Init monthArrDummy
+
     if (isLeapYear(dateSelected.year))
-        monthArr[1].days = 29;
+        monthArrDummy[1].days = 29;
 
     fputs("Month: ", stdout);
     s_gets(strMonth, MONTH_NAME_SIZE);
@@ -226,4 +268,24 @@ int start()
     }
 
     dateSelected.month = monthArr[iMonthParsed];
-}
+
+    fputs("Day: ", stdout);
+    if (scanf("%u", &dateSelected.day) != 1)
+    {
+        fputs("ERROR: An error occurred while entering the number of a year.\n", stderr);
+        return 0;
+    }
+    while (getchar() != '\n')
+        continue;
+
+    if (dateSelected.day > dateSelected.month.days)
+    {
+        fprintf(stderr, "ERROR: Days entered beyond %s.\n", dateSelected.month.name);
+        return 0;
+    }
+    fputs("Done.\n", stdout);
+    uiDays = getDaysFromTheBeginningOfAYearTo(&dateSelected, monthArrDummy);
+
+    fprintf(stdout, "We have %u days from the early %d to %s %u.\n", uiDays, dateSelected.year, dateSelected.month.name, dateSelected.day);
+
+    return 1;
