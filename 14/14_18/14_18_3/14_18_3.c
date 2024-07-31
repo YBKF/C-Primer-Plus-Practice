@@ -8,9 +8,9 @@
 #include <string.h>
 
 char *s_gets(char *st, int n);
-void sortBooksByTitle(struct book *books[]);
-void sortBooksByValue(struct book *books[]);
-struct book *sortBooks(struct book *books[], void (*funSort)(struct book *books[]));
+void sortBooksByTitle(struct book *books[], int iMaxCount);
+void sortBooksByValue(struct book *books[], int iMaxCount);
+struct book *sortBooks(struct book *books[], void (*funSort)(struct book *books[], int iMaxCount));
 
 #define MAXTITL 40
 #define MAXAUTL 40
@@ -82,4 +82,16 @@ char *s_gets(char *st, int n)
                 continue; // 处理输入行中剩余的字符
     }
     return ret_val;
+}
+
+void sortBooksByTitle(struct book *books[], int iMaxCount)
+{
+}
+
+void sortBooksByValue(struct book *books[], int iMaxCount)
+{
+}
+
+struct book *sortBooks(struct book *books[], void (*funSort)(struct book *books[], int iMaxCount))
+{
 }
