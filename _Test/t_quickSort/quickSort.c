@@ -1,30 +1,27 @@
 #include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 
+static void insertSort(int *piArr[], int iLow, int iHigh);
 static int partition(int *piArr[], int iLow, int iHigh);
 static void quickSort(int *piArr[], int iLow, int iHigh);
 void sort(int *piArr[], int iMaxCount);
-void printArr(int *piArr[], int iCount);
 
-int main()
+static void insertSort(int *piArr[], int iLow, int iHigh)
 {
-    int iArr[10] = {54, 73, 72, 26, 35, 13, 17, 56, 88, 10};
-    int iArr2[10] = {54, 73, 54, 26, 35, 13, 17, 54, 88, 54};
-
-    int *piArr[10];
-
-    for (int i = 0; i < 10; i++)
+    if (piArr == NULL)
     {
-        piArr[i] = &iArr[i];
+        fputs("ERROR: Found a null pointer at function insertSort.\n", stderr);
+        return;
     }
-    printArr(piArr, 10);
 
-    sort(piArr, 10);
+    int *piBuf;
 
-    printArr(piArr, 10);
-
-    return 0;
+    for (int i = iLow + 1; i <= iHigh; i++)
+        for (int j = i; j > iLow && *piArr[j] < *piArr[j - 1]; j--)
+        {
+            piBuf = piArr[j];
+            piArr[j] = piArr[j - 1];
+            piArr[j - 1] = piBuf;
+        }
 }
 
 static int partition(int *piArr[], int iLow, int iHigh)
@@ -72,8 +69,14 @@ static void quickSort(int *piArr[], int iLow, int iHigh)
         return;
     }
 
-    if (iHigh <= iLow)
+    // if (iHigh <= iLow)
+    //     return;
+
+    if (iHigh <= iLow + 5)
+    {
+        insertSort(piArr, iLow, iHigh);
         return;
+    }
 
     int iPartVal;
 
@@ -108,11 +111,4 @@ void sort(int *piArr[], int iMaxCount)
     }
 
     quickSort(piArr, 0, iMaxCount - 1);
-}
-
-void printArr(int *piArr[], int iCount)
-{
-    for (int i = 0; i < iCount; i++)
-        printf("%d ", *piArr[i]);
-    putchar('\n');
 }
