@@ -289,3 +289,4 @@ int start()
     fprintf(stdout, "We have %u days from the early %d to %s %u.\n", uiDays, dateSelected.year, dateSelected.month.name, dateSelected.day);
 
     return 1;
+}
