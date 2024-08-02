@@ -1,10 +1,5 @@
 #include <stdio.h>
 
-static void insertSort(int *piArr[], int iLow, int iHigh);
-static int partition(int *piArr[], int iLow, int iHigh);
-static void quickSort(int *piArr[], int iLow, int iHigh);
-void sort(int *piArr[], int iMaxCount);
-
 static void insertSort(int *piArr[], int iLow, int iHigh)
 {
     if (piArr == NULL)
