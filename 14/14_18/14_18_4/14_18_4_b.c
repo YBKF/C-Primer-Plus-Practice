@@ -32,8 +32,36 @@ typedef struct _id
     NAME name;
 } ID;
 
+void printInfo(ID id);
+void printInfoSet(ID idSet[], int count);
+
 int main()
 {
+    ID idSet[5] = {
+        (ID){"302039823", {"Flossie", "Marcus", "Dribble"}},
+        (ID){"302039820", {"Stephen", "", "Prata"}},
+        (ID){"302039824", {"Robert", "", "Sedgewick"}},
+        (ID){"302039826", {"Kevin", "", "Wayne"}},
+        (ID){"302039819", {"Andrew", "", "Koenig"}}};
+
+    printInfoSet(idSet, 5);
 
     return 0;
+}
+
+void printInfo(ID id)
+{
+    if (id.name.mid[0] != '\0')
+        printf("%s, %s %c.-- %s\n", id.name.first, id.name.last, id.name.mid[0], id.SSN);
+    else
+        printf("%s, %s-- %s\n", id.name.first, id.name.last, id.SSN);
+}
+
+void printInfoSet(ID idSet[], int count)
+{
+    if (idSet == NULL || count <= 0)
+        return;
+
+    for (int i = 0; i < count; i++)
+        printInfo(idSet[i]);
 }
