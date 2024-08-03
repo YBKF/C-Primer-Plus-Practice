@@ -121,17 +121,10 @@ int isLeapYear(int iYear)
         return 0;
     }
 
-    if (iYear % 100)
-    {
-        if (iYear % 400)
-            return 1;
-    }
-    else if (iYear % 4)
-    {
+    if ((iYear % 4 == 0 && iYear % 100 != 0) || iYear % 400 == 0)
         return 1;
-    }
-
-    return 0;
+    else
+        return 0;
 }
 
 void transStrToLowerCase(char *str)
