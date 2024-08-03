@@ -116,6 +116,9 @@ void transStrToLowerCase(char *str)
         str[i] = tolower(str[i]);
 }
 
+/**
+ * 本程序需排序的数组数量较少，排序使用的是插入法
+ */
 void sortBooksByTitle(struct book *books[], int iMaxCount)
 {
     if (books == NULL)
@@ -147,6 +150,9 @@ void sortBooksByTitle(struct book *books[], int iMaxCount)
         }
 }
 
+/**
+ * 本程序需排序的数组数量较少，排序使用的是插入法
+ */
 void sortBooksByValue(struct book *books[], int iMaxCount)
 {
     if (books == NULL)
