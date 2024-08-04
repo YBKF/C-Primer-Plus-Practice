@@ -20,13 +20,19 @@
  * g.打印班级的平均分，即所有结构的数值成员的平均值。
  */
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define NAME_MAX_LENGTH (15)
 #define NAME_MAX_SIZE (NAME_MAX_LENGTH + 1)
+#define GRADE_COUNT (3)
 #define CSIZE (4)
 
 typedef struct _student Student;
 typedef struct _name Name;
+
+Student *getStudentByName(const Name *name, Student *studentList, int maxCount);
+double calculateStudentAverageGrade(Student *student, const int gradeCount);
 
 struct _name
 {
@@ -37,7 +43,7 @@ struct _name
 struct _student
 {
     Name name;
-    double grade[3];
+    double grade[GRADE_COUNT];
     double aver;
 };
 
@@ -49,5 +55,121 @@ int main(int argc, char const *argv[])
         {{"Andrew", "Koenig"}},
         {{"Stephen", "Prata"}}};
 
+    Name nameBuf;
+    Student *stuSel;
+    double lfClassAver = .0;
+    int iScanfRetVal;
+
+    fprintf(stdout, "Enter the name of the student you want to search,\n");
+    fprintf(stdout, "Enter [Ctrl] + [z] at the start of a line to stop.\n");
+    // TODO 能连续接受两个字符串，且一旦检测到EOF便结束输入
+    while ((iScanfRetVal = scanf("%*s %*s", NAME_MAX_LENGTH, NAME_MAX_LENGTH, nameBuf.first, nameBuf.last)) == 2)
+    {
+        while (getchar() != '\n')
+            continue;
+
+        if (NULL == (stuSel = getStudentByName(&nameBuf, students, CSIZE)))
+        {
+            fprintf(stderr, "\
+ERROR: An error occurred while getting a student named \"%s %s\",\
+or there is no infomation about \"%s %s\".\n",
+                    nameBuf.first, nameBuf.last, nameBuf.first, nameBuf.last);
+            exit(EXIT_FAILURE);
+        }
+
+        for (int i = 0; i < GRADE_COUNT; i++)
+        {
+            fprintf(stdout, "Enter the %d grades about the student:\n", GRADE_COUNT);
+            double stuGrade;
+
+            if (scanf("%lf", &stuGrade) != 1)
+                stuGrade = .0;
+            while (getchar() != '\n')
+                continue;
+
+            stuSel->grade[i] = stuGrade;
+        }
+        calculateStudentAverageGrade(stuSel, GRADE_COUNT);
+
+        fprintf(stdout, "Enter the name of the student you want to search,\n");
+        fprintf(stdout, "Enter [Ctrl] + [z] at the start of a line to stop.\n");
+    }
+
+    for (int i = 0; i < CSIZE; i++)
+    {
+        fprintf(stdout, "\
+Name:   %s %s\n",
+                stuSel->name.first, stuSel->name.last);
+        fprintf(stdout, "\
+Grade:  ");
+        for (int i = 0; i < GRADE_COUNT; i++)
+            fprintf(stdout, "%2.2lf ", stuSel->grade[i]);
+        fprintf(stdout, "\
+\n");
+        fprintf(stdout, "\
+Aver:   %2.2lf\n",
+                stuSel->aver);
+        fprintf(stdout, "\n\
+\n");
+    }
+
+    for (int i = 0; i < CSIZE; i++)
+        lfClassAver += students[i].aver;
+
+    if (CSIZE >= 0)
+        lfClassAver /= CSIZE;
+
+    fprintf(stdout, "\
+Class Average: %2.2lf",
+            lfClassAver);
+
     return 0;
+}
+
+/**
+ * - [in] name
+ * - [in/out] studentList
+ * - [in] maxCount
+ */
+Student *getStudentByName(const Name *name, Student *studentList, int maxCount)
+{
+    if (name == NULL || studentList == NULL)
+    {
+        fprintf(stderr, "ERROR: Found a null pointer at function getStudentByName.\n");
+        return NULL;
+    }
+
+    if (maxCount <= 0)
+        return NULL;
+
+    for (int i = 0; i < maxCount; i++)
+        if (strcmp(name->first, studentList[i].name.first) == 0 && strcmp(name->last, studentList[i].name.last) == 0)
+            return &studentList[i];
+
+    return NULL;
+}
+
+/**
+ * - [in/out] student
+ * - [in] gradeCount
+ */
+double calculateStudentAverageGrade(Student *student, const int gradeCount)
+{
+    if (student == NULL)
+    {
+        fprintf(stderr, "ERROR: Found a null pointer at function calculateStudentAverageGrade.\n");
+        return .0;
+    }
+
+    if (gradeCount <= 0)
+        return .0;
+
+    double lfTotGrade = 0;
+
+    for (int i = 0; i < gradeCount; i++)
+        lfTotGrade += student->grade[i];
+
+    student->aver = (lfTotGrade /= gradeCount);
+
+    return student->aver;
 }
