@@ -23,8 +23,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define NAME_MAX_LENGTH (15)
-#define NAME_MAX_SIZE (NAME_MAX_LENGTH + 1)
+#define NAME_FIRST_MAX_LENGTH (15)
+#define NAME_FIRST_MAX_SIZE (NAME_FIRST_MAX_LENGTH + 1)
+#define NAME_LAST_MAX_LENGTH (15)
+#define NAME_LAST_MAX_SIZE (NAME_LAST_MAX_LENGTH + 1)
+#define NAME_FULL_MAX_SIZE (NAME_FIRST_MAX_LENGTH + NAME_LAST_MAX_LENGTH + 3)
 #define GRADE_COUNT (3)
 #define CSIZE (4)
 
@@ -36,8 +39,8 @@ double calculateStudentAverageGrade(Student *student, const int gradeCount);
 
 struct _name
 {
-    const char first[NAME_MAX_SIZE];
-    const char last[NAME_MAX_SIZE];
+    char first[NAME_FIRST_MAX_SIZE];
+    char last[NAME_LAST_MAX_SIZE];
 };
 
 struct _student
@@ -56,6 +59,8 @@ int main(int argc, char const *argv[])
         {{"Stephen", "Prata"}}};
 
     Name nameBuf;
+    char strFullName[NAME_FULL_MAX_SIZE];
+
     Student *stuSel;
     double lfClassAver = .0;
     int iScanfRetVal;
@@ -63,7 +68,15 @@ int main(int argc, char const *argv[])
     fprintf(stdout, "Enter the name of the student you want to search,\n");
     fprintf(stdout, "Enter [Ctrl] + [z] at the start of a line to stop.\n");
     // TODO 能连续接受两个字符串，且一旦检测到EOF便结束输入
-    while ((iScanfRetVal = scanf("%*s %*s", NAME_MAX_LENGTH, NAME_MAX_LENGTH, nameBuf.first, nameBuf.last)) == 2)
+    while (fgets(strFullName, NAME_FULL_MAX_SIZE, stdin) != NULL)
+    {
+        while (getchar() != '\n')
+            continue;
+
+        sscanf(strFullName, )
+    }
+
+    while ((iScanfRetVal = scanf("%*s", NAME_FIRST_MAX_LENGTH, nameBuf.first) == 1) && scanf("%*s", NAME_LAST_MAX_LENGTH, nameBuf.last) == 1)
     {
         while (getchar() != '\n')
             continue;
@@ -94,6 +107,17 @@ or there is no infomation about \"%s %s\".\n",
         fprintf(stdout, "Enter the name of the student you want to search,\n");
         fprintf(stdout, "Enter [Ctrl] + [z] at the start of a line to stop.\n");
     }
+
+    if (feof(stdin))
+        return 0;
+    else if (ferror(stdin))
+    {
+        fprintf(stderr, "ERROR: An error occurred while reading the input stream.\n");
+        return EXIT_FAILURE;
+    }
+
+    if (iScanfRetVal == EOF)
+        return 0;
 
     for (int i = 0; i < CSIZE; i++)
     {
@@ -164,12 +188,12 @@ double calculateStudentAverageGrade(Student *student, const int gradeCount)
     if (gradeCount <= 0)
         return .0;
 
-    double lfTotGrade = 0;
+    double lfTotalGrade = 0;
 
     for (int i = 0; i < gradeCount; i++)
-        lfTotGrade += student->grade[i];
+        lfTotalGrade += student->grade[i];
 
-    student->aver = (lfTotGrade /= gradeCount);
+    student->aver = (lfTotalGrade / gradeCount);
 
     return student->aver;
 }
