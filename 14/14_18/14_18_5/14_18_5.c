@@ -34,7 +34,8 @@
 typedef struct _student Student;
 typedef struct _name Name;
 
-Student *getStudentByName(const Name *name, Student *studentList, int maxCount);
+char *s_gets(char *s, int n);
+Student *getStudentByName(const Name *name, Student *studentList, int maxCount, unsigned int *puiStatus);
 double calculateStudentAverageGrade(Student *student, const int gradeCount);
 
 struct _name
@@ -63,25 +64,26 @@ int main(int argc, char const *argv[])
 
     Student *stuSel;
     double lfClassAver = .0;
-    int iScanfRetVal;
 
-    fprintf(stdout, "Enter the name of the student you want to search,\n");
+    fprintf(stdout, "[Name]\nEnter the name of the student you want to search,\n");
     fprintf(stdout, "Enter [Ctrl] + [z] at the start of a line to stop.\n");
-    // TODO 能连续接受两个字符串，且一旦检测到EOF便结束输入
-    while (fgets(strFullName, NAME_FULL_MAX_SIZE, stdin) != NULL)
+
+    // 输入开始
+    while (s_gets(strFullName, NAME_FULL_MAX_SIZE) != NULL)
     {
-        while (getchar() != '\n')
+        // fprintf(stdout, "#%s#\n", strFullName);
+
+        /* NAME_FIRST_MAX_LENGTH (15)
+           NAME_LAST_MAX_LENGTH (15) */
+        if (sscanf(strFullName, "%15s %15s", nameBuf.first, nameBuf.last) != 2)
+        {
+            fprintf(stderr, "ERROR: Unknown input: \"%s\", please retry.\n", strFullName);
+            fprintf(stderr, "\n[Name]\nEnter [Ctrl] + [z] at the start of a line to stop.\n");
             continue;
+        }
 
-        sscanf(strFullName, )
-    }
-
-    while ((iScanfRetVal = scanf("%*s", NAME_FIRST_MAX_LENGTH, nameBuf.first) == 1) && scanf("%*s", NAME_LAST_MAX_LENGTH, nameBuf.last) == 1)
-    {
-        while (getchar() != '\n')
-            continue;
-
-        if (NULL == (stuSel = getStudentByName(&nameBuf, students, CSIZE)))
+        unsigned int uiStatus = 1;
+        if (NULL == (stuSel = getStudentByName(&nameBuf, students, CSIZE, &uiStatus)) && uiStatus == 2)
         {
             fprintf(stderr, "\
 ERROR: An error occurred while getting a student named \"%s %s\",\
@@ -89,50 +91,60 @@ or there is no infomation about \"%s %s\".\n",
                     nameBuf.first, nameBuf.last, nameBuf.first, nameBuf.last);
             exit(EXIT_FAILURE);
         }
+        else if (uiStatus == 1)
+        {
+            fprintf(stderr, "\
+WARNING: There is no infomation about \"%s %s\".\n",
+                    nameBuf.first, nameBuf.last);
+            continue;
+        }
 
+        fprintf(stdout, "\n[Grade]\nEnter the %d grades about \"%s %s\":\n",
+                GRADE_COUNT, stuSel->name.first, stuSel->name.last);
         for (int i = 0; i < GRADE_COUNT; i++)
         {
-            fprintf(stdout, "Enter the %d grades about the student:\n", GRADE_COUNT);
             double stuGrade;
 
             if (scanf("%lf", &stuGrade) != 1)
+            {
+                fprintf(stderr, "WARNING: Unknown input.\n");
                 stuGrade = .0;
-            while (getchar() != '\n')
-                continue;
+            }
 
             stuSel->grade[i] = stuGrade;
         }
+        while (getchar() != '\n')
+            continue;
+
         calculateStudentAverageGrade(stuSel, GRADE_COUNT);
 
-        fprintf(stdout, "Enter the name of the student you want to search,\n");
+        fprintf(stdout, "\n[Name]\nEnter the name of the student you want to search,\n");
         fprintf(stdout, "Enter [Ctrl] + [z] at the start of a line to stop.\n");
     }
+    // 输入结束
 
-    if (feof(stdin))
-        return 0;
-    else if (ferror(stdin))
+    if (ferror(stdin))
     {
         fprintf(stderr, "ERROR: An error occurred while reading the input stream.\n");
         return EXIT_FAILURE;
     }
-
-    if (iScanfRetVal == EOF)
-        return 0;
+    // else if (feof(stdin))
+    //     fprintf(stdout, "Got an EOF.\n");
 
     for (int i = 0; i < CSIZE; i++)
     {
         fprintf(stdout, "\
 Name:   %s %s\n",
-                stuSel->name.first, stuSel->name.last);
+                students[i].name.first, students[i].name.last);
         fprintf(stdout, "\
 Grade:  ");
-        for (int i = 0; i < GRADE_COUNT; i++)
-            fprintf(stdout, "%2.2lf ", stuSel->grade[i]);
+        for (int j = 0; j < GRADE_COUNT; j++)
+            fprintf(stdout, "%2.2lf ", students[i].grade[j]);
         fprintf(stdout, "\
 \n");
         fprintf(stdout, "\
 Aver:   %2.2lf\n",
-                stuSel->aver);
+                students[i].aver);
         fprintf(stdout, "\n\
 \n");
     }
@@ -151,25 +163,73 @@ Class Average: %2.2lf",
 }
 
 /**
+ * 从标准输入中读取字符，并将读取到的字符存入 s，
+ * 直到读到新的一行或读取了 n-1 个字符又或是读取到文件结尾（EOF），
+ * 功能类似于 gets() 但可以设置最大读取字符数。
+ * 读取结束后，在字符串结尾添加一个空字符并返回 s 的地址，
+ * 如果还未向 s 存入任何字符便读到文件结尾（EOF）则返回NULL且不向字符串结尾添加空字符。
+ * 一旦在读取过程中出现错误则返回NULL。
+ */
+char *s_gets(char *s, int n)
+{
+    char *p = s;
+    FILE *stream = stdin;
+
+    if (s == NULL || n <= 0)
+        return NULL;
+
+    int c = 0;
+
+    while (--n > 0 && (c = getchar()) != EOF)
+        if (c == '\n')
+            break;
+        else
+            *p++ = c;
+
+    if (n == 0)
+        while (getchar() != '\n')
+            continue;
+
+    if (c == EOF && (p == s || ferror(stream)))
+        return NULL;
+
+    *p = '\0';
+
+    return s;
+}
+
+/**
  * - [in] name
- * - [in/out] studentList
+ * - [in] studentList
  * - [in] maxCount
  */
-Student *getStudentByName(const Name *name, Student *studentList, int maxCount)
+Student *getStudentByName(const Name *name, Student *studentList, int maxCount, unsigned int *puiStatus)
 {
     if (name == NULL || studentList == NULL)
     {
         fprintf(stderr, "ERROR: Found a null pointer at function getStudentByName.\n");
+        if (puiStatus != NULL)
+            *puiStatus = 2;
         return NULL;
     }
 
     if (maxCount <= 0)
+    {
+        if (puiStatus != NULL)
+            *puiStatus = 2;
         return NULL;
+    }
 
     for (int i = 0; i < maxCount; i++)
         if (strcmp(name->first, studentList[i].name.first) == 0 && strcmp(name->last, studentList[i].name.last) == 0)
+        {
+            if (puiStatus != NULL)
+                *puiStatus = 0;
             return &studentList[i];
+        }
 
+    if (puiStatus != NULL)
+        *puiStatus = 1;
     return NULL;
 }
 
