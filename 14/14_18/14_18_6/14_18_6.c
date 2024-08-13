@@ -26,6 +26,10 @@
  * 最后，程序结合整个球队的统计数据，一行显示一位球员的累计数据。
  */
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define FILE_NAME ("list.test")
 
 #define PLAYER_COUNT (19)
 #define PLAYER_NUM_MAX (PLAYER_COUNT - 1)
@@ -35,12 +39,24 @@
 #define NAME_LAST_MAX_LENGTH (15)
 #define NAME_LAST_MAX_SIZE (NAME_LAST_MAX_LENGTH + 1)
 
+#define ERROR_CODE_OTHER_ERROR (0x0001)
+#define ERROR_CODE_NULL_PARAM1 (0x0002)
+#define ERROR_CODE_NULL_PARAM2 (0x0003)
+#define ERROR_CODE_NULL_PARAM3 (0x0004)
+#define ERROR_CODE_FILE_STREAM_ERROR (0x0005)
+#define ERROR_CODE_SCANF_WRONG_COUNT (0x0006)
+#define INFO_CODE_GOT_EOF (EOF)
+#define INFO_CODE_SUCCESS (0x0000)
+
+#define STR_INIT_VOID ("")
+
 typedef struct _name NAME;
 typedef struct _player PLAYER;
 
-int parseALine(PLAYER *buf, FILE *file);
-int isPlayerInitialized(PLAYER *player);
-void initPlayer(PLAYER *player, PLAYER *buf);
+int parseALine(PLAYER *ppBuf, FILE *fp);
+int initPlayer(PLAYER *ppPlayer);
+inline int isPlayerUnnamed(PLAYER *ppPlayer);
+int mergePlayerInfo(PLAYER *ppTarget, PLAYER *ppBuf);
 
 typedef struct _name
 {
@@ -61,34 +77,186 @@ typedef struct _player
 
 int main(int argc, char const *argv[])
 {
+    FILE *fp;
+
+    if ((fp = fopen(FILE_NAME, "r")) == NULL)
+    {
+        fprintf(stdout, "\
+[ERROR] Cannot open file: %s\n",
+                FILE_NAME);
+        return EXIT_FAILURE;
+    }
+
+    PLAYER pBuf;
+    PLAYER players[PLAYER_COUNT];          // 结构数组
+    for (int i = 0; i < PLAYER_COUNT; i++) // 初始化结构数组中的各结构
+        if (initPlayer(&players[i]) == 0)
+        {
+            fprintf(stderr, "\
+[ERROR] Failed to initialization.\n");
+            return EXIT_FAILURE;
+        }
+
+    int iParseRet = ERROR_CODE_OTHER_ERROR; // 存储函数返回值
+    while ((iParseRet = parseALine(&pBuf, fp)) == INFO_CODE_SUCCESS && pBuf.num < PLAYER_NUM_MAX)
+    {
+        PLAYER *ppCurPlayer = &players[pBuf.num];
+
+        if (isPlayerUnnamed(ppCurPlayer)) // 检测与缓存中对应的 球员结构数组中的结构是否为第一次被赋值
+            *ppCurPlayer = pBuf;          // 第一次被赋值，则完全复制缓存中的数据到结构中
+        else
+            mergePlayerInfo(ppCurPlayer, &pBuf);
+    }
+
+    // if (feof(fp))
+    //     /* Do nothing */;
+
+    // 解析函数返回值错误检查，ferror(fp) 包括在下方代码块中
+    if (iParseRet > 0)
+    {
+        fprintf(stderr, "\
+[ERROR] An error occurred while parse a line of the file.\n\
+        ERROR_CODE: %#x\n",
+                iParseRet);
+
+        return EXIT_FAILURE;
+    }
 
     return 0;
 }
 
 /**
- * - [out] buf
- * - [in] file
+ * - [out] ppBuf
+ * - [in] fp
  *
- * 读取文件中的一行字符串，解析后存入指针 pBuf 指向的结构缓存中；
- * 读取成功时返回 0，若读到文件结尾返回 -1，
- * 若函数运行过程中出现错误，则返回一个大于 0 的值，具体值依据错误类型而定。
+ * 从指针 fp 指向的文件中读取的一行字符串，解析后存入指针 ppBuf 指向的结构缓存中；
+ * 读取成功时返回 0；若读到文件结尾，则返回 EOF；若函数运行过程中遇到错误，则返回一个 大于 0 的值。
  *
+ * [out] ppBuf
+ * 参数应为一个指向 PLAYER 结构类型变量的指针，此结构作为缓存用于存储从文件中读取并解析后的球员数据。
+ *
+ * [in] fp
+ * 参数为一个指向文件的指针。
+ *
+ * 各返回值表示的意义：
+ * - 返回值 == -1，表示函数读到文件结尾；
+ * - 返回值 == 0，表示函数读取成功；
+ * - 返回值 > 0，表示函数读取过程中出现错误，具体值依据错误类型而定；
+ * - 返回值 为其他值，其意义未定义。
+ *
+ * 相关的错误的返回值（错误码）：
+ * - ERROR_CODE_OTHER_ERROR (0x0001)
+ * - ERROR_CODE_NULL_PARAM1 (0x0002)
+ * - ERROR_CODE_NULL_PARAM2 (0x0003)
+ * - ERROR_CODE_FILE_STREAM_ERROR (0x0005)
+ * - ERROR_CODE_SCANF_WRONG_COUNT (0x0006)
  *
  */
-int parseALine(PLAYER *buf, FILE *file)
+int parseALine(PLAYER *ppBuf, FILE *fp)
 {
+    if (ppBuf == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR] Got a NULL buffer pointer while parsing a line.\n");
+        return ERROR_CODE_NULL_PARAM1;
+    }
+    if (fp == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR] NULL File. Cannot open a file while parsing a line.\n");
+        return ERROR_CODE_NULL_PARAM2;
+    }
+
+    int iScfRetVal;
+    iScfRetVal = fscanf(fp, " %u %s %s %u %u %u %u",
+                        &ppBuf->num,
+                        ppBuf->name.first,
+                        ppBuf->name.last,
+                        &ppBuf->atBats,
+                        &ppBuf->hits,
+                        &ppBuf->walks,
+                        &ppBuf->rbis);
+
+    if (iScfRetVal == 7)
+    {
+        return INFO_CODE_SUCCESS;
+    }
+    else if (feof(fp))
+    {
+        return INFO_CODE_GOT_EOF;
+    }
+    else
+    {
+        if (ferror(fp))
+        {
+            return ERROR_CODE_FILE_STREAM_ERROR;
+        }
+        else if (iScfRetVal != 7)
+        {
+            return ERROR_CODE_SCANF_WRONG_COUNT;
+        }
+        else
+        {
+            return ERROR_CODE_OTHER_ERROR;
+        }
+    }
 }
 
 /**
- * - [in] player
+ * - [in] pName
  *
- * 检查 player 是否已初始化；
- * 已初始化，则返回 1，
- * 未初始化，则返回 0。
- *
- * 函数仅检查
+ * 检查 pName 指向的结构中的两个成员变量是否为空字符串。
+ * 为空字符串，则返回 1；
+ * 否则返回 0。
  *
  */
-int isPlayerInitialized(PLAYER *player)
+int isVoidName(NAME *pName)
 {
+    if (pName->first[0] == '\0' && pName->last[0] == '\0')
+        return 1;
+    else
+        return 0;
+}
+
+/**
+ * - [in] ppPlayer
+ *
+ * 检查 ppPlayer 指向的结构是否为“未命名”，
+ * 即，检查成员结构变量 name 中的两个成员变量是否为空字符串。
+ * 主要用于检测结构是否是第一次被赋值。
+ * 为空字符串，则返回 1；
+ * 否则返回 0。
+ *
+ */
+inline int isPlayerUnnamed(PLAYER *ppPlayer)
+{
+    return isVoidName(&ppPlayer->name);
+}
+
+/**
+ * - [out] ppPlayer
+ *
+ * 初始化 ppPlayer 指向的 Player 结构。
+ * 初始化成功返回 1，
+ * 否则返回 0
+ *
+ */
+int initPlayer(PLAYER *ppPlayer)
+{
+    if (ppPlayer == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR] NULL Pointer. Cannot initial the Player.\n");
+        return 0;
+    }
+
+    *ppPlayer = (PLAYER){
+        .num = 0U,
+        .name = (NAME){STR_INIT_VOID, STR_INIT_VOID},
+        .atBats = 0U,
+        .hits = 0U,
+        .walks = 0U,
+        .rbis = 0U};
+
+    return 1;
 }
