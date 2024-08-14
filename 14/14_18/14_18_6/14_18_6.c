@@ -137,6 +137,10 @@ int main(int argc, char const *argv[])
             printPlayerData(&players[i]);
         }
 
+    if (fclose(fp) != 0)
+        fprintf(stderr, "\
+[ERROR] Error in closing the file.\n");
+
     return 0;
 }
 
