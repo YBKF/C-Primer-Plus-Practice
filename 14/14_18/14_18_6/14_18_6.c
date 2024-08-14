@@ -55,8 +55,10 @@ typedef struct _player PLAYER;
 
 int parseALine(PLAYER *ppBuf, FILE *fp);
 int initPlayer(PLAYER *ppPlayer);
-inline int isPlayerUnnamed(PLAYER *ppPlayer);
-int mergePlayerInfo(PLAYER *ppTarget, PLAYER *ppBuf);
+int isPlayerUnnamed(const PLAYER *ppPlayer);
+int mergePlayerInfo(PLAYER *ppTarget, const PLAYER *ppMerge);
+void calculateBattingAverage(PLAYER *ppPlayer);
+void printPlayerData(const PLAYER *ppPlayer);
 
 typedef struct _name
 {
@@ -103,9 +105,14 @@ int main(int argc, char const *argv[])
         PLAYER *ppCurPlayer = &players[pBuf.num];
 
         if (isPlayerUnnamed(ppCurPlayer)) // 检测与缓存中对应的 球员结构数组中的结构是否为第一次被赋值
-            *ppCurPlayer = pBuf;          // 第一次被赋值，则完全复制缓存中的数据到结构中
+        {
+            *ppCurPlayer = pBuf; // 第一次被赋值，则完全复制缓存中的数据到结构中
+        }
         else
-            mergePlayerInfo(ppCurPlayer, &pBuf);
+        {
+            if (mergePlayerInfo(ppCurPlayer, &pBuf) == 0)
+                return EXIT_FAILURE;
+        }
     }
 
     // if (feof(fp))
@@ -121,6 +128,14 @@ int main(int argc, char const *argv[])
 
         return EXIT_FAILURE;
     }
+
+    // 计算所有球员的安打率并打印球员的数据
+    if (iParseRet == EOF)
+        for (int i = 0; i < PLAYER_COUNT; i++)
+        {
+            calculateBattingAverage(&players[i]);
+            printPlayerData(&players[i]);
+        }
 
     return 0;
 }
@@ -210,7 +225,7 @@ int parseALine(PLAYER *ppBuf, FILE *fp)
  * 否则返回 0。
  *
  */
-int isVoidName(NAME *pName)
+int isVoidName(const NAME *pName)
 {
     if (pName->first[0] == '\0' && pName->last[0] == '\0')
         return 1;
@@ -228,7 +243,7 @@ int isVoidName(NAME *pName)
  * 否则返回 0。
  *
  */
-inline int isPlayerUnnamed(PLAYER *ppPlayer)
+int isPlayerUnnamed(const PLAYER *ppPlayer)
 {
     return isVoidName(&ppPlayer->name);
 }
@@ -256,7 +271,73 @@ int initPlayer(PLAYER *ppPlayer)
         .atBats = 0U,
         .hits = 0U,
         .walks = 0U,
-        .rbis = 0U};
+        .rbis = 0U,
+        .battingAverage = 0.0};
 
     return 1;
+}
+
+/**
+ * - [out] ppTarget
+ * - [in] ppMerge
+ *
+ * 融合结构的数据，
+ * 将 ppMerge 指向的结构的上场次数、击中数、走垒数、打点数据融合到 ppTarget 指向的结构中
+ *
+ */
+int mergePlayerInfo(PLAYER *ppTarget, const PLAYER *ppMerge)
+{
+    if (ppTarget == NULL || ppMerge == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR] NULL Pointer. Cannot merge the data.\n");
+        return 0;
+    }
+
+    ppTarget->atBats += ppMerge->atBats;
+    ppTarget->hits += ppMerge->hits;
+    ppTarget->walks += ppMerge->walks;
+    ppTarget->rbis += ppMerge->rbis;
+
+    return 1;
+}
+
+/**
+ * - [in, out] ppPlayer
+ */
+void calculateBattingAverage(PLAYER *ppPlayer)
+{
+    if (ppPlayer == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR] NULL Pointer. Cannot calculate the BattingAverage.\n");
+        return;
+    }
+
+    if (ppPlayer->atBats != 0)
+        ppPlayer->battingAverage = (double)ppPlayer->hits / (double)ppPlayer->atBats;
+}
+
+/**
+ * - [in] ppPlayer
+ */
+void printPlayerData(const PLAYER *ppPlayer)
+{
+    if (ppPlayer == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR] NULL Pointer. Cannot print the player data.\n");
+        return;
+    }
+
+    fprintf(stdout, "\
+[Number] %2u, [Name] %s %s, [AtBats] %u, [Hits] %u, [Walks] %u, [RBIS] %u, [BattingAverage] %.2lf\n",
+            ppPlayer->num,
+            ppPlayer->name.first,
+            ppPlayer->name.last,
+            ppPlayer->atBats,
+            ppPlayer->hits,
+            ppPlayer->walks,
+            ppPlayer->rbis,
+            ppPlayer->battingAverage);
 }
