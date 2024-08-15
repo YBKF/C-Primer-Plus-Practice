@@ -7,6 +7,17 @@
  * 最简单的方法是改动储存在内存中的所有数据，然后再把最后的信息写入文件。
  * 跟踪的一个方法是在book结构中添加一个成员表示是否该项被删除。
  */
+/* INSERT, DELETE, UPDATE */
+/**
+ * 设定一个存储定位指针，指向；
+ * 设定一个数组 D，存储已在内存中标记为“已删除”的结构数组元素的下标，
+ * 设定三个指针一个初始指向数组 D 的数组头，即 &D[0]，一个指向数组尾，一个用于指示当前可存储的位置
+ * get, set 数组数据时需调用函数，
+ * get 成功时指针;
+ * set 成功时指针 + 1；
+ * INSERT 当优先，成功时指针 + 1，
+ * DELETE 成功时指针 - 1；
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -61,10 +72,12 @@ int main(void)
     {
         puts("Now enter the author.");
         s_gets(library[count].author, MAXAUTL);
+
         puts("Now enter the value.");
         scanf("%f", &library[count++].value);
         while (getchar() != '\n')
             continue; /* 清理输入行 */
+
         if (count < MAXBKS)
             puts("Enter the next title.");
     }
