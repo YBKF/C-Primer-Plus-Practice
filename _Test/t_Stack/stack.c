@@ -49,6 +49,12 @@ int main(int argc, char const *argv[])
         test_printStackData(&stack, 10);
     }
 
+    for (int i = 11; i <= 20; i++)
+    {
+        pushStack(i, &stack);
+        test_printStackData(&stack, 10);
+    }
+
     return 0;
 }
 
