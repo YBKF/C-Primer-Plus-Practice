@@ -12,9 +12,6 @@
  * 设定一个存储定位指针，指向；
  * 设定一个数组 D，存储已在内存中标记为“已删除”的结构数组元素的下标，
  * 设定三个指针一个初始指向数组 D 的数组头，即 &D[0]，一个指向数组尾，一个用于指示当前可存储的位置
- * get, set 数组数据时需调用函数，
- * get 成功时指针;
- * set 成功时指针 + 1；
  * INSERT 当优先，成功时指针 + 1，
  * DELETE 成功时指针 - 1；
  */
@@ -25,7 +22,20 @@
 #define MAXAUTL 40
 #define MAXBKS 10 /* 最大书籍数量 */
 
+#define STACK_MAX_SIZE (MAXBKS)
+#define STACK_ERROR_CODE (-1)
+
+struct book;
+typedef struct _stack STACK;
+
 char *s_gets(char *st, int n);
+
+STACK *initStack(int iArr[], int iSize, STACK *pStack);
+void pushStack(int iData, STACK *pStack);
+int popStack(STACK *pStack);
+int isEmptyStack(STACK *pStack);
+int getStackSize(STACK *pStack);
+int getStackTop(STACK *pStack);
 
 struct book
 { /* 建立 book 模板 */
@@ -33,6 +43,13 @@ struct book
     char author[MAXAUTL];
     float value;
 };
+
+typedef struct _stack
+{ /* 创建一个用于存取数组中“已删除”元素下标的结构模版 */
+    const int *data;
+    int *top;
+    const int *limit;
+} STACK;
 
 int main(void)
 {
@@ -115,4 +132,139 @@ char *s_gets(char *st, int n)
     }
 
     return ret_val;
+}
+
+STACK *initStack(int iArr[], int iSize, STACK *pStack)
+{
+    if (iArr == NULL || pStack == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR]     An error occurred while initialing the stack.\n\
+            Null pointer.\n");
+        return NULL;
+    }
+
+    *pStack = (STACK){
+        .data = iArr,
+        .top = iArr - 1,
+        .limit = iArr + (iSize - 1)};
+
+    return pStack;
+}
+
+void pushStack(int iData, STACK *pStack)
+{
+    if (pStack == NULL || pStack->data == NULL || pStack->limit == NULL || pStack->top == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR]     An error occurred while pushing data onto the stack.\n\
+            Because of the parameter is a null pointer or invalid memory region.\n");
+        return;
+    }
+
+    if (pStack->top >= pStack->limit || pStack->top < (pStack->data - 1))
+    {
+        if (pStack->top == pStack->limit)
+        {
+            fprintf(stderr, "\
+[ERROR]     The stack is full.\n");
+        }
+        else
+        {
+            fprintf(stderr, "\
+[ERROR]     The stack has overflowed.\n");
+        }
+        return;
+    }
+
+    *(++pStack->top) = iData;
+}
+
+int popStack(STACK *pStack)
+{
+    if (pStack == NULL || pStack->data == NULL || pStack->top == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR]     An error occurred while popping data from the stack.\n\
+            Because of the parameter is a null pointer or invalid memory region.\n");
+        return STACK_ERROR_CODE;
+    }
+
+    if (pStack->top < pStack->data)
+    {
+        fprintf(stderr, "\
+[ERROR]     Empty stack.\n\
+            No data popped from the stack.\n");
+        return STACK_ERROR_CODE;
+    }
+
+    int iRetVal = *(pStack->top--);
+    return iRetVal;
+}
+
+int isEmptyStack(STACK *pStack)
+{
+    if (pStack == NULL || pStack->data == NULL || pStack->limit == NULL || pStack->top == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR]     Cannot check if the stack is empty.\n\
+            Because of the parameter is a null pointer or invalid memory region.\n");
+        return STACK_ERROR_CODE;
+    }
+
+    if (pStack->top == pStack->data - 1)
+    {
+        return 1;
+    }
+    else if (pStack->top >= pStack->data && pStack->top <= pStack->limit)
+    {
+        return 0;
+    }
+    else
+    {
+        fprintf(stderr, "\
+[ERROR]     The stack has overflowed.\n");
+        return STACK_ERROR_CODE;
+    }
+}
+
+int getStackSize(STACK *pStack)
+{
+    if (pStack == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR]     Unable to get the stack size.\n\
+            Because of the parameter is a null pointer or invalid memory region.\n");
+        return STACK_ERROR_CODE;
+    }
+
+    return pStack->top - pStack->data + 1;
+}
+
+int getStackTop(STACK *pStack)
+{
+    if (pStack == NULL || pStack->data == NULL || pStack->limit == NULL || pStack->top == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR]     Unable to get data at the top of the stack.\n\
+            Because of the parameter is a null pointer or invalid memory region.\n");
+        return STACK_ERROR_CODE;
+    }
+
+    if (pStack->top >= pStack->data && pStack->top <= pStack->limit)
+    {
+        return *pStack->top;
+    }
+    else if (pStack->top == pStack->data - 1)
+    {
+        fprintf(stderr, "\
+[ERROR]     Empty stack.\n");
+        return STACK_ERROR_CODE;
+    }
+    else
+    {
+        fprintf(stderr, "\
+[ERROR]     The stack has overflowed.\n");
+        return STACK_ERROR_CODE;
+    }
 }
