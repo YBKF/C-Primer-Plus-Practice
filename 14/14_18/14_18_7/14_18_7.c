@@ -8,13 +8,6 @@
  * 跟踪的一个方法是在book结构中添加一个成员表示是否该项被删除。
  */
 /* INSERT, DELETE, UPDATE */
-/**
- * 设定一个存储定位指针，指向；
- * 设定一个数组 D，存储已在内存中标记为“已删除”的结构数组元素的下标，
- * 设定三个指针一个初始指向数组 D 的数组头，即 &D[0]，一个指向数组尾，一个用于指示当前可存储的位置
- * INSERT 当优先，成功时指针 + 1，
- * DELETE 成功时指针 - 1；
- */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,15 +30,20 @@ int isEmptyStack(STACK *pStack);
 int getStackSize(STACK *pStack);
 int getStackTop(STACK *pStack);
 
+int INSERT();
+int DELETE();
+int UPDATE();
+
 struct book
 { /* 建立 book 模板 */
     char title[MAXTITL];
     char author[MAXAUTL];
     float value;
+    int isDeleted;
 };
 
 typedef struct _stack
-{ /* 创建一个用于存取数组中“已删除”元素下标的结构模版 */
+{ /* 创建一个用于存取数组中“已删除”元素下标的后进先出的结构模版 */
     const int *data;
     int *top;
     const int *limit;
