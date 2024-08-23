@@ -18,6 +18,9 @@
 #define STACK_MAX_SIZE (MAXBKS)
 #define STACK_ERROR_CODE (-1)
 
+#define VOID_STR ("")
+#define INIT_STR VOID_STR
+
 struct book;
 typedef struct _stack STACK;
 
@@ -30,9 +33,9 @@ int isEmptyStack(STACK *pStack);
 int getStackSize(STACK *pStack);
 int getStackTop(STACK *pStack);
 
-int INSERT();
-int DELETE();
-int UPDATE();
+int INSERT(struct book books[], STACK *psDelList, int *piCount);
+int DELETE(struct book books[], STACK *psDelList, int *piCount);
+int UPDATE(struct book books[]);
 
 struct book
 { /* 建立 book 模板 */
@@ -75,11 +78,11 @@ int main(void)
 
     filecount = count;
 
-    if (count == MAXBKS)
-    {
-        fputs("The book.dat file is full.", stderr);
-        exit(2);
-    }
+    // if (count == MAXBKS)
+    // {
+    //     fputs("The book.dat file is full.", stderr);
+    //     exit(2);
+    // }
 
     puts("Please add new book titles.");
     puts("Press [enter] at the start of a line to stop.");
@@ -265,4 +268,97 @@ int getStackTop(STACK *pStack)
 [ERROR]     The stack has overflowed.\n");
         return STACK_ERROR_CODE;
     }
+}
+
+int INSERT(struct book books[], STACK *psDelList, int *piCount)
+{
+    if (books == NULL || psDelList == NULL || piCount == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR]     Failure of INSERT operation.\n\
+            Because one of the parameters is a null pointer or invalid memory region.\n");
+        return 0;
+    }
+
+    if (*piCount >= MAXBKS)
+    {
+        fprintf(stderr, "\
+[ERROR]     Failure of INSERT operation.\n\
+            The library is full.\n");
+        return 0;
+    }
+
+    struct book bookBuf = {
+        .title = INIT_STR,
+        .author = INIT_STR,
+        .value = 0.0,
+        .isDeleted = 0};
+
+    // 输入数据并存入临时结构
+    puts("Please add new book titles.");
+    puts("Press [enter] at the start of a line to return to the menu.");
+    if (s_gets(bookBuf.title, MAXTITL) != NULL && bookBuf.title != '\0')
+    {
+        puts("Now enter the author.");
+        s_gets(bookBuf.author, MAXAUTL);
+
+        puts("Now enter the value.");
+        scanf("%f", &bookBuf.value);
+        while (getchar() != '\n')
+            continue; /* 清理输入行 */
+    }
+    else
+    {
+        fprintf(stdout, "\
+  INSERT canceled.\n");
+        return 1;
+    }
+
+    // 调用并检查 isEmptyStack() 函数的合法性
+    int iRetIsEmpty = 0;
+    if ((iRetIsEmpty = isEmptyStack(psDelList)) != 0 && iRetIsEmpty != 1)
+    {
+        fprintf(stderr, "\
+[ERROR]     An error occurred while checking if the stack is empty.\n\
+            Error code: %d\n",
+                iRetIsEmpty);
+        return 0;
+    }
+
+    // 判断“已删除”列表是否为空，然后执行相应操作
+    if (iRetIsEmpty == 1)
+    {
+        books[*piCount] = bookBuf;
+    }
+    else // iRetIsEmpty == 0
+    {
+        int iRetGetTop = 0;
+        if ((iRetGetTop = getStackTop(psDelList)) < 0)
+        { // 一般情况下对这个程序来说，从栈顶获取到的整型值只要小于 0 那就是不合法的
+            fprintf(stderr, "\
+[ERROR]     An error occurred while getting data at the top of the stack.\n\
+            Error code: %d\n",
+                    iRetIsEmpty);
+            return 0;
+        }
+        books[iRetGetTop] = bookBuf;
+        if (popStack(psDelList) == STACK_ERROR_CODE)
+        {
+            fprintf(stderr, "\
+[ERROR]     Error code: %d\n",
+                    STACK_ERROR_CODE);
+            return 0;
+        }
+    }
+    *piCount++;
+
+    return 1;
+}
+
+int DELETE(struct book books[], STACK *psDelList, int *piCount)
+{
+}
+
+int UPDATE(struct book books[])
+{
 }
