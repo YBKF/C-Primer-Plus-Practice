@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #define MAXTITL 40
 #define MAXAUTL 40
 #define MAXBKS 10 /* 最大书籍数量 */
@@ -18,6 +19,7 @@
 #define STACK_MAX_SIZE (MAXBKS)
 #define STACK_ERROR_CODE (-1)
 
+#define OPTION_STR
 #define VOID_STR ("")
 #define INIT_STR VOID_STR
 
@@ -27,7 +29,7 @@ typedef struct _stack STACK;
 char *s_gets(char *st, int n);
 
 STACK *initStack(int iArr[], int iSize, STACK *pStack);
-void pushStack(int iData, STACK *pStack);
+int pushStack(int iData, STACK *pStack);
 int popStack(STACK *pStack);
 int isEmptyStack(STACK *pStack);
 int getStackSize(STACK *pStack);
@@ -153,14 +155,14 @@ STACK *initStack(int iArr[], int iSize, STACK *pStack)
     return pStack;
 }
 
-void pushStack(int iData, STACK *pStack)
+int pushStack(int iData, STACK *pStack)
 {
     if (pStack == NULL || pStack->data == NULL || pStack->limit == NULL || pStack->top == NULL)
     {
         fprintf(stderr, "\
 [ERROR]     An error occurred while pushing data onto the stack.\n\
             Because of the parameter is a null pointer or invalid memory region.\n");
-        return;
+        return STACK_ERROR_CODE;
     }
 
     if (pStack->top >= pStack->limit || pStack->top < (pStack->data - 1))
@@ -175,10 +177,12 @@ void pushStack(int iData, STACK *pStack)
             fprintf(stderr, "\
 [ERROR]     The stack has overflowed.\n");
         }
-        return;
+        return STACK_ERROR_CODE;
     }
 
     *(++pStack->top) = iData;
+
+    return 0;
 }
 
 int popStack(STACK *pStack)
@@ -295,9 +299,9 @@ int INSERT(struct book books[], STACK *psDelList, int *piCount)
         .isDeleted = 0};
 
     // 输入数据并存入临时结构
-    puts("Please add new book titles.");
-    puts("Press [enter] at the start of a line to return to the menu.");
-    if (s_gets(bookBuf.title, MAXTITL) != NULL && bookBuf.title != '\0')
+    puts("  Please add new book titles.");
+    puts("  Press [enter] at the start of a line to return to the menu.");
+    if (s_gets(bookBuf.title, MAXTITL) != NULL && bookBuf.title[0] != '\0')
     {
         puts("Now enter the author.");
         s_gets(bookBuf.author, MAXAUTL);
@@ -334,11 +338,11 @@ int INSERT(struct book books[], STACK *psDelList, int *piCount)
     {
         int iRetGetTop = 0;
         if ((iRetGetTop = getStackTop(psDelList)) < 0)
-        { // 一般情况下对这个程序来说，从栈顶获取到的整型值只要小于 0 那就是不合法的
+        { // 对这个程序来说，从栈顶获取到的整型值只要小于 0 那就是不合法的
             fprintf(stderr, "\
 [ERROR]     An error occurred while getting data at the top of the stack.\n\
             Error code: %d\n",
-                    iRetIsEmpty);
+                    iRetGetTop);
             return 0;
         }
         books[iRetGetTop] = bookBuf;
@@ -357,8 +361,122 @@ int INSERT(struct book books[], STACK *psDelList, int *piCount)
 
 int DELETE(struct book books[], STACK *psDelList, int *piCount)
 {
+    if (books == NULL || psDelList == NULL || piCount == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR]     Failure of DELETE operation.\n\
+            Because one of the parameters is a null pointer or invalid memory region.\n");
+        return 0;
+    }
+
+    if (*piCount <= 0)
+    {
+        fprintf(stderr, "\
+[ERROR]     Failure of DELETE operation.\n\
+            The library is empty.\n");
+        return 0;
+    }
+
+    fprintf(stdout, "\
+  Please enter the index of the book you want to delete(index start at 0).\n");
+    int iIndexEntered = 0;
+    if (scanf("%d", &iIndexEntered) != 1)
+    {
+        fprintf(stderr, "\
+[ERROR]     Failed to enter the index of the book.\n\
+            Please enter a number.\n");
+        return 0;
+    }
+    while (getchar() != '\n')
+        continue;
+
+    // 判断输入的数组下标是否合法
+    if (iIndexEntered < 0 || iIndexEntered > MAXBKS - 1)
+    {
+        fprintf(stderr, "\
+[ERROR]     The index you entered is out of range.\n\
+            Please enter a number between 0 and %d.\n\
+            Returned to the menu.\n",
+                MAXBKS - 1);
+        return 0;
+    }
+
+    if (books[iIndexEntered].isDeleted == 1)
+    {
+        fprintf(stderr, "\
+[ERROR]     The book you want to delete has been deleted.\n\
+            Returned to the menu.\n");
+        return 0;
+    }
+    else if (books[iIndexEntered].isDeleted != 0 && books[iIndexEntered].isDeleted != 1)
+    {
+        fprintf(stderr, "\
+[ERROR]     An error occurred while deleting the book.\n\
+            The book you want to delete is invalid.\n");
+        return 0;
+    }
+
+    if (pushStack(iIndexEntered, psDelList) == STACK_ERROR_CODE)
+    {
+        fprintf(stderr, "\
+[ERROR]     Error code: %d\n",
+                STACK_ERROR_CODE);
+        return 0;
+    }
+    books[iIndexEntered].isDeleted = 1;
+    *piCount--;
+
+    return 1;
 }
 
 int UPDATE(struct book books[])
 {
+    if (books == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR]     Failure of UPDATE operation.\n\
+            Because the parameter is a null pointer.\n");
+        return 0;
+    }
+
+    fprintf(stdout, "\
+  Please enter the index of the book you want to update(index start at 0).\n");
+    int iIndexEntered = 0;
+    if (scanf("%d", &iIndexEntered) != 1)
+    {
+        fprintf(stderr, "\
+[ERROR]     Failed to enter the index of the book.\n\
+            Please enter a number.\n");
+        return 0;
+    }
+    while (getchar() != '\n')
+        continue;
+
+    // 判断输入的数组下标是否合法
+    if (iIndexEntered < 0 || iIndexEntered > MAXBKS - 1)
+    {
+        fprintf(stderr, "\
+[ERROR]     The index you entered is out of range.\n\
+            Please enter a number between 0 and %d.\n\
+            Returned to the menu.\n",
+                MAXBKS - 1);
+        return 0;
+    }
+
+    if (books[iIndexEntered].isDeleted == 1)
+    {
+        fprintf(stderr, "\
+[ERROR]     The book you want to update has been deleted.\n\
+            Returned to the menu.\n");
+        return 0;
+    }
+    else if (books[iIndexEntered].isDeleted != 0 && books[iIndexEntered].isDeleted != 1)
+    {
+        fprintf(stderr, "\
+[ERROR]     An error occurred while updating the book.\n\
+            The book you want to update is invalid.\n");
+        return 0;
+    }
+
+    char strOption
 }
