@@ -27,6 +27,7 @@ struct book;
 typedef struct _stack STACK;
 
 char *s_gets(char *st, int n);
+char *copyString(char *strTarget, char *strSource, int iSize);
 
 STACK *initStack(int iArr[], int iSize, STACK *pStack);
 int pushStack(int iData, STACK *pStack);
@@ -135,6 +136,23 @@ char *s_gets(char *st, int n)
     }
 
     return ret_val;
+}
+
+char *copyString(char *strTarget, char *strSource, int iSize)
+{
+    if (strTarget == NULL || strSource == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR]     An error occurred while copying a string.\n\
+            Because of the parameter is a null pointer or invalid memory region.\n");
+        return NULL;
+    }
+
+    char *retVal;
+    retVal = strncpy(strTarget, strSource, iSize - 1);
+    strTarget[iSize - 1] = '\0';
+
+    return retVal;
 }
 
 STACK *initStack(int iArr[], int iSize, STACK *pStack)
@@ -478,5 +496,85 @@ int UPDATE(struct book books[])
         return 0;
     }
 
-    char strOption
+    fprintf(stdout, "\
+  Please enter the number of the item you want to update.\n\
+  1. Title\n\
+  2. Author\n\
+  3. Value\n\
+  4. Return to the menu\n");
+    int iOptionEntered = 0;
+
+    if (scanf("%d", &iOptionEntered) != 1)
+    {
+        fprintf(stderr, "\
+[ERROR]     Failed to get the option.\n\
+            Please enter a number.\n");
+        return 0;
+    }
+    while (getchar() != '\n')
+        continue;
+
+    int isUpdateDone = 0;
+    while (isUpdateDone)
+    {
+        switch (iOptionEntered)
+        {
+        case 1:
+            fprintf(stdout, "\
+  Please enter the new title.\n");
+            char strTitleBuf[MAXTITL];
+
+            if (s_gets(strTitleBuf, MAXTITL) == NULL)
+            {
+                fprintf(stderr, "\
+[ERROR]     Failed to get the new title.\n\
+            Please enter a string of length less than %d.\n",
+                        MAXTITL);
+                return 0;
+            }
+            copyString(books[iIndexEntered].title, strTitleBuf, MAXTITL);
+            break;
+
+        case 2:
+            fprintf(stdout, "\
+  Please enter the new author.\n");
+            char strAuthorBuf[MAXAUTL];
+
+            if (s_gets(strAuthorBuf, MAXAUTL) == NULL)
+            {
+                fprintf(stderr, "\
+[ERROR]     Failed to get the new author.\n\
+            Please enter a string of length less than %d.\n",
+                        MAXAUTL);
+                return 0;
+            }
+            copyString(books[iIndexEntered].author, strAuthorBuf, MAXAUTL);
+            break;
+
+        case 3:
+            fprintf(stdout, "\
+  Please enter the new value.\n");
+
+            double lfValueBuf = 0.0;
+            int iRetVal = scanf("%lf", &lfValueBuf);
+            while (getchar() != '\n')
+                continue;
+
+            if (iRetVal != 1)
+            {
+                fprintf(stderr, "\
+[ERROR]     Failed to get the new value.\n\
+            Please enter a number.\n");
+                return 0;
+            }
+            books[iIndexEntered].value = lfValueBuf;
+            break;
+
+        default:
+            isUpdateDone = 1;
+            break;
+        }
+    }
+
+    return 1;
 }
