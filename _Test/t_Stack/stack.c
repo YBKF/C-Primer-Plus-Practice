@@ -13,7 +13,7 @@ typedef struct _IntSTACK
 } INTSTACK;
 
 INTSTACK *initStack(int iArr[], int iSize, INTSTACK *pIntStack);
-void pushStack(int iData, INTSTACK *pIntStack);
+int pushStack(int iData, INTSTACK *pIntStack);
 int popStack(INTSTACK *pIntStack);
 int isEmptyStack(INTSTACK *pIntStack);
 int getStackSize(INTSTACK *pIntStack);
@@ -76,19 +76,19 @@ INTSTACK *initStack(int iArr[], int iSize, INTSTACK *pIntStack)
     return pIntStack;
 }
 
-void pushStack(int iData, INTSTACK *pIntStack)
+int pushStack(int iData, INTSTACK *pStack)
 {
-    if (pIntStack == NULL || pIntStack->data == NULL || pIntStack->limit == NULL || pIntStack->top == NULL)
+    if (pStack == NULL || pStack->data == NULL || pStack->limit == NULL || pStack->top == NULL)
     {
         fprintf(stderr, "\
 [ERROR]     An error occurred while pushing data onto the stack.\n\
             Because of the parameter is a null pointer or invalid memory region.\n");
-        return;
+        return STACK_ERROR_CODE;
     }
 
-    if (pIntStack->top >= pIntStack->limit || pIntStack->top < (pIntStack->data - 1))
+    if (pStack->top >= pStack->limit || pStack->top < (pStack->data - 1))
     {
-        if (pIntStack->top == pIntStack->limit)
+        if (pStack->top == pStack->limit)
         {
             fprintf(stderr, "\
 [ERROR]     The stack is full.\n");
@@ -98,10 +98,12 @@ void pushStack(int iData, INTSTACK *pIntStack)
             fprintf(stderr, "\
 [ERROR]     The stack has overflowed.\n");
         }
-        return;
+        return STACK_ERROR_CODE;
     }
 
-    *(++pIntStack->top) = iData;
+    *(++pStack->top) = iData;
+
+    return 0;
 }
 
 int popStack(INTSTACK *pIntStack)

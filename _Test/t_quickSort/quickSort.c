@@ -31,19 +31,24 @@ static int partition(int *piArr[], int iLow, int iHigh)
     int iTail = iHigh + 1;
     int *piBuf;
 
+    // 选定指定范围内的第一个元素作为比较元素
     int *piChosen = piArr[iLow];
 
     while (1)
     {
+        // 最初, 先使用一个 iHead 指针指向比较元素的下一个元素, 然后在指定范围内向后比较, 直到指向一个大于等于比较元素的元素
         while (*piArr[++iHead] < *piChosen && iHead != iHigh)
             continue;
 
+        // 最初, 先使用一个 iTail 指针指向指定范围内的最后一个元素, 然后在指定范围内向前比较, 直到指向一个小于等于比较元素的元素
         while (*piArr[--iTail] > *piChosen && iTail != iLow)
             continue;
 
+        // 如果 iHead 指针指向的位置在 iTail 指针指向的位置的右边或与其重叠, 则退出循环
         if (iHead >= iTail)
             break;
 
+        // 否则交换 iHead 和 iTail 指向的元素
         piBuf = piArr[iHead];
         piArr[iHead] = piArr[iTail];
         piArr[iTail] = piBuf;
