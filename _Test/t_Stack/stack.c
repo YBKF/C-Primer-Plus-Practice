@@ -1,66 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "stack.h"
 
-#define STACK_MAX_SIZE (10)
-#define STACK_ERROR_CODE (-1)
-
-typedef struct _IntSTACK
+STACK *initStack(Item arr[], int iSize, STACK *pStack)
 {
-    const int *data;
-    int *top;
-    const int *limit;
-} INTSTACK;
-
-INTSTACK *initStack(int iArr[], int iSize, INTSTACK *pIntStack);
-int pushStack(int iData, INTSTACK *pIntStack);
-int popStack(INTSTACK *pIntStack);
-int isEmptyStack(INTSTACK *pIntStack);
-int getStackSize(INTSTACK *pIntStack);
-int getStackTop(INTSTACK *pIntStack);
-
-void test_printStackData(INTSTACK *pIntStack, int count)
-{
-    fprintf(stdout, "%2d:  ", getStackTop(pIntStack));
-
-    for (int i = 0; i < count; i++)
-        fprintf(stdout, "%02d ", pIntStack->data[i]);
-    putchar('\n');
-}
-
-int main(int argc, char const *argv[])
-{
-    int iArr[STACK_MAX_SIZE];
-    memset((int *)iArr, 0, STACK_MAX_SIZE);
-
-    INTSTACK stack;
-    initStack(iArr, 10, &stack);
-    test_printStackData(&stack, 10);
-
-    for (int i = 1; i <= 10; i++)
-    {
-        pushStack(i, &stack);
-        test_printStackData(&stack, 10);
-    }
-
-    while (!isEmptyStack(&stack))
-    {
-        popStack(&stack);
-        test_printStackData(&stack, 10);
-    }
-
-    for (int i = 11; i <= 20; i++)
-    {
-        pushStack(i, &stack);
-        test_printStackData(&stack, 10);
-    }
-
-    return 0;
-}
-
-INTSTACK *initStack(int iArr[], int iSize, INTSTACK *pIntStack)
-{
-    if (iArr == NULL || pIntStack == NULL)
+    if (arr == NULL || pStack == NULL)
     {
         fprintf(stderr, "\
 [ERROR]     An error occurred while initialing the stack.\n\
@@ -68,17 +13,17 @@ INTSTACK *initStack(int iArr[], int iSize, INTSTACK *pIntStack)
         return NULL;
     }
 
-    *pIntStack = (INTSTACK){
-        .data = iArr,
-        .top = iArr - 1,
-        .limit = iArr + (iSize - 1)};
+    *pStack = (STACK){
+        .itemList = arr,
+        .top = arr - 1,
+        .limit = arr + (iSize - 1)};
 
-    return pIntStack;
+    return pStack;
 }
 
-int pushStack(int iData, INTSTACK *pStack)
+Item pushStack(Item itemData, STACK *pStack)
 {
-    if (pStack == NULL || pStack->data == NULL || pStack->limit == NULL || pStack->top == NULL)
+    if (pStack == NULL || pStack->itemList == NULL || pStack->limit == NULL || pStack->top == NULL)
     {
         fprintf(stderr, "\
 [ERROR]     An error occurred while pushing data onto the stack.\n\
@@ -86,7 +31,7 @@ int pushStack(int iData, INTSTACK *pStack)
         return STACK_ERROR_CODE;
     }
 
-    if (pStack->top >= pStack->limit || pStack->top < (pStack->data - 1))
+    if (pStack->top >= pStack->limit || pStack->top < (pStack->itemList - 1))
     {
         if (pStack->top == pStack->limit)
         {
@@ -101,14 +46,14 @@ int pushStack(int iData, INTSTACK *pStack)
         return STACK_ERROR_CODE;
     }
 
-    *(++pStack->top) = iData;
+    *(++pStack->top) = itemData;
 
     return 0;
 }
 
-int popStack(INTSTACK *pIntStack)
+Item popStack(STACK *pStack)
 {
-    if (pIntStack == NULL || pIntStack->data == NULL || pIntStack->top == NULL)
+    if (pStack == NULL || pStack->itemList == NULL || pStack->top == NULL)
     {
         fprintf(stderr, "\
 [ERROR]     An error occurred while popping data from the stack.\n\
@@ -116,7 +61,7 @@ int popStack(INTSTACK *pIntStack)
         return STACK_ERROR_CODE;
     }
 
-    if (pIntStack->top < pIntStack->data)
+    if (pStack->top < pStack->itemList)
     {
         fprintf(stderr, "\
 [ERROR]     Empty stack.\n\
@@ -124,13 +69,13 @@ int popStack(INTSTACK *pIntStack)
         return STACK_ERROR_CODE;
     }
 
-    int iRetVal = *(pIntStack->top--);
+    Item iRetVal = *(pStack->top--);
     return iRetVal;
 }
 
-int isEmptyStack(INTSTACK *pIntStack)
+int isEmptyStack(STACK *pStack)
 {
-    if (pIntStack == NULL || pIntStack->data == NULL || pIntStack->limit == NULL || pIntStack->top == NULL)
+    if (pStack == NULL || pStack->itemList == NULL || pStack->limit == NULL || pStack->top == NULL)
     {
         fprintf(stderr, "\
 [ERROR]     Cannot check if the stack is empty.\n\
@@ -138,11 +83,11 @@ int isEmptyStack(INTSTACK *pIntStack)
         return STACK_ERROR_CODE;
     }
 
-    if (pIntStack->top == pIntStack->data - 1)
+    if (pStack->top == pStack->itemList - 1)
     {
         return 1;
     }
-    else if (pIntStack->top >= pIntStack->data && pIntStack->top <= pIntStack->limit)
+    else if (pStack->top >= pStack->itemList && pStack->top <= pStack->limit)
     {
         return 0;
     }
@@ -154,9 +99,9 @@ int isEmptyStack(INTSTACK *pIntStack)
     }
 }
 
-int getStackSize(INTSTACK *pIntStack)
+int getStackSize(STACK *pStack)
 {
-    if (pIntStack == NULL)
+    if (pStack == NULL)
     {
         fprintf(stderr, "\
 [ERROR]     Unable to get the stack size.\n\
@@ -164,12 +109,12 @@ int getStackSize(INTSTACK *pIntStack)
         return STACK_ERROR_CODE;
     }
 
-    return pIntStack->top - pIntStack->data + 1;
+    return pStack->top - pStack->itemList + 1;
 }
 
-int getStackTop(INTSTACK *pIntStack)
+Item getStackTop(STACK *pStack)
 {
-    if (pIntStack == NULL || pIntStack->data == NULL || pIntStack->limit == NULL || pIntStack->top == NULL)
+    if (pStack == NULL || pStack->itemList == NULL || pStack->limit == NULL || pStack->top == NULL)
     {
         fprintf(stderr, "\
 [ERROR]     Unable to get data at the top of the stack.\n\
@@ -177,11 +122,11 @@ int getStackTop(INTSTACK *pIntStack)
         return STACK_ERROR_CODE;
     }
 
-    if (pIntStack->top >= pIntStack->data && pIntStack->top <= pIntStack->limit)
+    if (pStack->top >= pStack->itemList && pStack->top <= pStack->limit)
     {
-        return *pIntStack->top;
+        return *pStack->top;
     }
-    else if (pIntStack->top == pIntStack->data - 1)
+    else if (pStack->top == pStack->itemList - 1)
     {
         fprintf(stderr, "\
 [ERROR]     Empty stack.\n");

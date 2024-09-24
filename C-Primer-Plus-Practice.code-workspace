@@ -70,7 +70,8 @@
 			"numbers": "c",
 			"span": "c",
 			"text_encoding": "c",
-			"variant": "c"
+			"variant": "c",
+			"stack.h": "c"
 		},
 		"cSpell.words": [
 			"Kernighan",
