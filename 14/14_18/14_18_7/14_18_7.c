@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+
 #define MAXTITL 40
 #define MAXAUTL 40
 #define MAXBKS 10 /* 最大书籍数量 */
@@ -39,6 +40,8 @@ int getStackTop(STACK *pStack);
 int INSERT(struct book books[], STACK *psDelList, int *piCount);
 int DELETE(struct book books[], STACK *psDelList, int *piCount);
 int UPDATE(struct book books[]);
+
+void showMenu();
 
 struct book
 { /* 建立 book 模板 */
@@ -81,28 +84,6 @@ int main(void)
 
     filecount = count;
 
-    // if (count == MAXBKS)
-    // {
-    //     fputs("The book.dat file is full.", stderr);
-    //     exit(2);
-    // }
-
-    puts("Please add new book titles.");
-    puts("Press [enter] at the start of a line to stop.");
-    while (count < MAXBKS && s_gets(library[count].title, MAXTITL) != NULL && library[count].title[0] != '\0')
-    {
-        puts("Now enter the author.");
-        s_gets(library[count].author, MAXAUTL);
-
-        puts("Now enter the value.");
-        scanf("%f", &library[count++].value);
-        while (getchar() != '\n')
-            continue; /* 清理输入行 */
-
-        if (count < MAXBKS)
-            puts("Enter the next title.");
-    }
-
     if (count > 0)
     {
         puts("Here is the list of your books:");
@@ -113,6 +94,12 @@ int main(void)
     }
     else
         puts("No books? Too bad.\n");
+
+    // TODO 此处开始提示用户进行操作 showMenu()
+    while (/* condition */)
+    {
+        /* code */
+    }
 
     puts("Bye.\n");
     fclose(pbooks);
@@ -363,7 +350,6 @@ int INSERT(struct book books[], STACK *psDelList, int *piCount)
                     iRetGetTop);
             return 0;
         }
-        books[iRetGetTop] = bookBuf;
         if (popStack(psDelList) == STACK_ERROR_CODE)
         {
             fprintf(stderr, "\
@@ -371,6 +357,9 @@ int INSERT(struct book books[], STACK *psDelList, int *piCount)
                     STACK_ERROR_CODE);
             return 0;
         }
+
+        // 只在下标获取成功且栈顶数据出栈成功的情况下
+        books[iRetGetTop] = bookBuf;
     }
     *piCount++;
 
@@ -481,6 +470,7 @@ int UPDATE(struct book books[])
         return 0;
     }
 
+    // 检查当前选择的书目是否被标记为“已删除”
     if (books[iIndexEntered].isDeleted == 1)
     {
         fprintf(stderr, "\
@@ -496,27 +486,28 @@ int UPDATE(struct book books[])
         return 0;
     }
 
-    fprintf(stdout, "\
+    // 开始更新数据
+    int isUpdateDone = 0;
+    while (isUpdateDone)
+    {
+        fprintf(stdout, "\
   Please enter the number of the item you want to update.\n\
   1. Title\n\
   2. Author\n\
   3. Value\n\
   4. Return to the menu\n");
-    int iOptionEntered = 0;
 
-    if (scanf("%d", &iOptionEntered) != 1)
-    {
-        fprintf(stderr, "\
+        int iOptionEntered = 0;
+        if (scanf("%d", &iOptionEntered) != 1)
+        {
+            fprintf(stderr, "\
 [ERROR]     Failed to get the option.\n\
             Please enter a number.\n");
-        return 0;
-    }
-    while (getchar() != '\n')
-        continue;
+            return 0;
+        }
+        while (getchar() != '\n')
+            continue;
 
-    int isUpdateDone = 0;
-    while (isUpdateDone)
-    {
         switch (iOptionEntered)
         {
         case 1:
@@ -532,7 +523,14 @@ int UPDATE(struct book books[])
                         MAXTITL);
                 return 0;
             }
-            copyString(books[iIndexEntered].title, strTitleBuf, MAXTITL);
+
+            if (copyString(books[iIndexEntered].title, strTitleBuf, MAXTITL) == NULL)
+                fprintf(stderr, "\
+  Operation failed, no data changed.\n");
+            else
+                fprintf(stdout, "\
+  Title updated.\n");
+
             break;
 
         case 2:
@@ -548,7 +546,14 @@ int UPDATE(struct book books[])
                         MAXAUTL);
                 return 0;
             }
-            copyString(books[iIndexEntered].author, strAuthorBuf, MAXAUTL);
+
+            if (copyString(books[iIndexEntered].author, strAuthorBuf, MAXAUTL) == NULL)
+                fprintf(stderr, "\
+  Operation failed, no data changed.\n");
+            else
+                fprintf(stdout, "\
+  Author updated.\n");
+
             break;
 
         case 3:
@@ -568,6 +573,10 @@ int UPDATE(struct book books[])
                 return 0;
             }
             books[iIndexEntered].value = lfValueBuf;
+
+            fprintf(stdout, "\
+  Value updated.\n");
+
             break;
 
         default:
@@ -577,4 +586,8 @@ int UPDATE(struct book books[])
     }
 
     return 1;
+}
+
+void showMenu()
+{
 }
