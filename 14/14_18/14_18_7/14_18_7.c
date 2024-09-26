@@ -24,6 +24,23 @@
 #define VOID_STR ("")
 #define INIT_STR VOID_STR
 
+enum MainMenuOption
+{
+    INSERT = 1,
+    DELETE,
+    UPDATE,
+    EXIT
+};
+
+enum UpdateMenuOption
+{
+    Title = 1,
+    Author,
+    Value,
+    ReturnToMenu
+
+};
+
 struct book;
 typedef struct _stack STACK;
 
@@ -41,6 +58,7 @@ int INSERT(struct book books[], STACK *psDelList, int *piCount);
 int DELETE(struct book books[], STACK *psDelList, int *piCount);
 int UPDATE(struct book books[]);
 
+int listBooks(const struct book books[], int iCount);
 void showMenu();
 
 struct book
@@ -84,21 +102,11 @@ int main(void)
 
     filecount = count;
 
-    if (count > 0)
-    {
-        puts("Here is the list of your books:");
-        for (index = 0; index < count; index++)
-            printf("%s by %s: $%.2f\n",
-                   library[index].title, library[index].author, library[index].value);
-        fwrite(&library[filecount], size, count - filecount, pbooks);
-    }
-    else
-        puts("No books? Too bad.\n");
+    listBooks(library, count);
 
     // TODO 此处开始提示用户进行操作 showMenu()
-    while (/* condition */)
+    while ()
     {
-        /* code */
     }
 
     puts("Bye.\n");
@@ -497,8 +505,9 @@ int UPDATE(struct book books[])
   3. Value\n\
   4. Return to the menu\n");
 
-        int iOptionEntered = 0;
-        if (scanf("%d", &iOptionEntered) != 1)
+        enum UpdateMenuOption option;
+        // int option = 0;
+        if (scanf("%d", &option) != 1)
         {
             fprintf(stderr, "\
 [ERROR]     Failed to get the option.\n\
@@ -508,9 +517,9 @@ int UPDATE(struct book books[])
         while (getchar() != '\n')
             continue;
 
-        switch (iOptionEntered)
+        switch (option)
         {
-        case 1:
+        case Title:
             fprintf(stdout, "\
   Please enter the new title.\n");
             char strTitleBuf[MAXTITL];
@@ -533,7 +542,7 @@ int UPDATE(struct book books[])
 
             break;
 
-        case 2:
+        case Author:
             fprintf(stdout, "\
   Please enter the new author.\n");
             char strAuthorBuf[MAXAUTL];
@@ -556,7 +565,7 @@ int UPDATE(struct book books[])
 
             break;
 
-        case 3:
+        case Value:
             fprintf(stdout, "\
   Please enter the new value.\n");
 
@@ -588,6 +597,36 @@ int UPDATE(struct book books[])
     return 1;
 }
 
+int listBooks(const struct book books[], int iCount)
+{
+    if (books == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR]     Failed to list the books.\n\
+            Because one of the parameters is a null pointer.\n");
+        return 0;
+    }
+
+    if (iCount <= 0)
+    {
+        puts("No books? Too bad.\n");
+        return 0;
+    }
+
+    int iIndex;
+
+    puts("Here is the list of your books:");
+    for (iIndex = 0; iIndex < iCount; iIndex++)
+        printf("%s by %s: $%.2f\n",
+               books[iIndex].title, books[iIndex].author, books[iIndex].value);
+}
 void showMenu()
 {
+    fprintf(stdout, "\
+  What should we do?\n\
+  Please enter the number of the operation you want to execute.\n\
+  1. INSERT\n\
+  2. DELETE\n\
+  3. UPDATE\n\
+  4. EXIT\n");
 }
