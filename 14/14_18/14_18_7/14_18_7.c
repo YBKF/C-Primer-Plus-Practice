@@ -26,41 +26,20 @@
 
 enum MainMenuOption
 {
-    INSERT = 1,
-    DELETE,
-    UPDATE,
-    EXIT
+    MENU_OPT_INSERT = 1,
+    MENU_OPT_DELETE,
+    MENU_OPT_UPDATE,
+    MENU_OPT_EXIT
 };
 
 enum UpdateMenuOption
 {
-    Title = 1,
-    Author,
-    Value,
-    ReturnToMenu
+    MENU_OPT_TITLE = 1,
+    MENU_OPT_AUTHOR,
+    MENU_OPT_VALUE,
+    MENU_OPT_RET
 
 };
-
-struct book;
-typedef struct _stack STACK;
-
-char *s_gets(char *st, int n);
-char *copyString(char *strTarget, char *strSource, int iSize);
-
-STACK *initStack(int iArr[], int iSize, STACK *pStack);
-int pushStack(int iData, STACK *pStack);
-int popStack(STACK *pStack);
-int isEmptyStack(STACK *pStack);
-int getStackSize(STACK *pStack);
-int getStackTop(STACK *pStack);
-
-int INSERT(struct book books[], STACK *psDelList, int *piCount);
-int DELETE(struct book books[], STACK *psDelList, int *piCount);
-int UPDATE(struct book books[]);
-
-int listBooks(const struct book books[], int iCount);
-void showMenu();
-
 struct book
 { /* 建立 book 模板 */
     char title[MAXTITL];
@@ -76,18 +55,43 @@ typedef struct _stack
     const int *limit;
 } STACK;
 
+// struct book;
+// typedef struct _stack STACK;
+
+char *s_gets(char *st, int n);
+char *copyString(char *strTarget, char *strSource, int iSize);
+
+STACK *initStack(int iArr[], int iSize, STACK *pStack);
+int pushStack(int iData, STACK *pStack);
+int popStack(STACK *pStack);
+int isEmptyStack(STACK *pStack);
+int getStackSize(STACK *pStack);
+int getStackTop(STACK *pStack);
+
+int INSERT(struct book books[], STACK *psDelList, int *piHighCount);
+int DELETE(struct book books[], STACK *psDelList, int *piHighCount);
+int UPDATE(struct book books[], const int *piHighCount);
+
+int listBooks(const struct book books[], int iCount);
+void showMenu();
+int scanfOption(int *piOption);
+
 int main(void)
 {
     struct book library[MAXBKS]; /* 结构数组 */
     int count = 0;
-    int index, filecount;
     FILE *pbooks;
     int size = sizeof(struct book);
 
     if ((pbooks = fopen("book.dat", "r+b")) == NULL)
     {
-        fputs("Can't open book.dat file\n", stderr);
-        exit(1);
+        fputs("Can't find book.dat file\n", stderr);
+        if ((pbooks = fopen("book.dat", "w+b")) == NULL)
+        {
+            fputs("Can't create book.dat file\n", stderr);
+            exit(1);
+        }
+        // exit(1);
     }
 
     rewind(pbooks); /* 定位到文件开始 */
@@ -100,14 +104,69 @@ int main(void)
         count++;
     }
 
-    filecount = count;
+    int iDelList[MAXBKS];
+    STACK stackDel;
+
+    memset((int *)iDelList, 0, sizeof(int) * MAXBKS);
+    initStack(iDelList, MAXBKS, &stackDel);
+
+    int isEXIT = 0;
+    while (!isEXIT)
+    {
+        showMenu();
+
+        int option;
+        if (scanfOption(&option) != 1)
+        {
+            fprintf(stderr, "\
+[ERROR]     Failed to get the option.\n\
+            Please enter a number.\n");
+            continue;
+        }
+
+        int iOpRet = 0;
+
+        switch (option)
+        {
+        case MENU_OPT_INSERT:
+            iOpRet = INSERT(library, &stackDel, &count);
+            break;
+
+        case MENU_OPT_DELETE:
+            iOpRet = DELETE(library, &stackDel, &count);
+            break;
+
+        case MENU_OPT_UPDATE:
+            iOpRet = UPDATE(library, &count);
+            break;
+
+        case MENU_OPT_EXIT:
+            isEXIT = 1;
+            break;
+
+        default:
+            fprintf(stderr, "\
+[ERROR]     Invalid option.\n");
+            break;
+        }
+
+        if (iOpRet == 0 && isEXIT != 1)
+        {
+            fprintf(stderr, "\
+[ERROR]     Failure of operation.\n");
+        }
+    }
+
+    // TODO 先将数组中未被删除的书目拷贝到另一个数组中，再将这个新的数组写入到文件
+    // TODO 或者定位到已删除的数组并将其删除
+
+    fseek(pbooks, 0L, SEEK_SET);
+
+    for (int i = 0; i < count; i++)
+        if (library[i].isDeleted == 0)
+            fwrite(&library[i], size, 1, pbooks);
 
     listBooks(library, count);
-
-    // TODO 此处开始提示用户进行操作 showMenu()
-    while ()
-    {
-    }
 
     puts("Bye.\n");
     fclose(pbooks);
@@ -287,9 +346,9 @@ int getStackTop(STACK *pStack)
     }
 }
 
-int INSERT(struct book books[], STACK *psDelList, int *piCount)
+int INSERT(struct book books[], STACK *psDelList, int *piHighCount)
 {
-    if (books == NULL || psDelList == NULL || piCount == NULL)
+    if (books == NULL || psDelList == NULL || piHighCount == NULL)
     {
         fprintf(stderr, "\
 [ERROR]     Failure of INSERT operation.\n\
@@ -297,7 +356,7 @@ int INSERT(struct book books[], STACK *psDelList, int *piCount)
         return 0;
     }
 
-    if (*piCount >= MAXBKS)
+    if (*piHighCount >= MAXBKS)
     {
         fprintf(stderr, "\
 [ERROR]     Failure of INSERT operation.\n\
@@ -345,7 +404,10 @@ int INSERT(struct book books[], STACK *psDelList, int *piCount)
     // 判断“已删除”列表是否为空，然后执行相应操作
     if (iRetIsEmpty == 1)
     {
-        books[*piCount] = bookBuf;
+        books[*piHighCount] = bookBuf;
+
+        // 仅在“已删除”列表为空时增加书目最高数量，此变量主要表示从数组起始元素到最后一个非“已删除”元素的总数
+        (*piHighCount)++;
     }
     else // iRetIsEmpty == 0
     {
@@ -366,17 +428,16 @@ int INSERT(struct book books[], STACK *psDelList, int *piCount)
             return 0;
         }
 
-        // 只在下标获取成功且栈顶数据出栈成功的情况下
+        // 只在下标获取成功且栈顶数据出栈成功的情况下进行赋值
         books[iRetGetTop] = bookBuf;
     }
-    *piCount++;
 
     return 1;
 }
 
-int DELETE(struct book books[], STACK *psDelList, int *piCount)
+int DELETE(struct book books[], STACK *psDelList, int *piHighCount)
 {
-    if (books == NULL || psDelList == NULL || piCount == NULL)
+    if (books == NULL || psDelList == NULL || piHighCount == NULL)
     {
         fprintf(stderr, "\
 [ERROR]     Failure of DELETE operation.\n\
@@ -384,7 +445,7 @@ int DELETE(struct book books[], STACK *psDelList, int *piCount)
         return 0;
     }
 
-    if (*piCount <= 0)
+    if (*piHighCount <= 0)
     {
         fprintf(stderr, "\
 [ERROR]     Failure of DELETE operation.\n\
@@ -439,18 +500,29 @@ int DELETE(struct book books[], STACK *psDelList, int *piCount)
         return 0;
     }
     books[iIndexEntered].isDeleted = 1;
-    *piCount--;
+
+    // 仅在“已删除”列表为空时减少书目最高数量，此变量主要表示从数组起始元素到最后一个非“已删除”元素的总数
+    if (isEmptyStack(psDelList))
+        (*piHighCount)--;
 
     return 1;
 }
 
-int UPDATE(struct book books[])
+int UPDATE(struct book books[], const int *piHighCount)
 {
     if (books == NULL)
     {
         fprintf(stderr, "\
 [ERROR]     Failure of UPDATE operation.\n\
-            Because the parameter is a null pointer.\n");
+            Because of the parameter is a null pointer or invalid memory region.\n");
+        return 0;
+    }
+
+    if (*piHighCount <= 0)
+    {
+        fprintf(stderr, "\
+[ERROR]     Failure of UPDATE operation.\n\
+            The library is empty.\n");
         return 0;
     }
 
@@ -468,13 +540,13 @@ int UPDATE(struct book books[])
         continue;
 
     // 判断输入的数组下标是否合法
-    if (iIndexEntered < 0 || iIndexEntered > MAXBKS - 1)
+    if (iIndexEntered < 0 || iIndexEntered > *piHighCount - 1)
     {
         fprintf(stderr, "\
 [ERROR]     The index you entered is out of range.\n\
             Please enter a number between 0 and %d.\n\
             Returned to the menu.\n",
-                MAXBKS - 1);
+                *piHighCount - 1);
         return 0;
     }
 
@@ -505,23 +577,21 @@ int UPDATE(struct book books[])
   3. Value\n\
   4. Return to the menu\n");
 
-        enum UpdateMenuOption option;
-        // int option = 0;
-        if (scanf("%d", &option) != 1)
+        int option;
+        if (scanfOption(&option) != 1)
         {
             fprintf(stderr, "\
 [ERROR]     Failed to get the option.\n\
             Please enter a number.\n");
             return 0;
         }
-        while (getchar() != '\n')
-            continue;
 
         switch (option)
         {
-        case Title:
+        case MENU_OPT_TITLE:
             fprintf(stdout, "\
-  Please enter the new title.\n");
+  Please enter the new title.\n\
+  Press [enter] at the start of a line to cancel.");
             char strTitleBuf[MAXTITL];
 
             if (s_gets(strTitleBuf, MAXTITL) == NULL)
@@ -530,7 +600,13 @@ int UPDATE(struct book books[])
 [ERROR]     Failed to get the new title.\n\
             Please enter a string of length less than %d.\n",
                         MAXTITL);
-                return 0;
+                break;
+            }
+            else if (strTitleBuf[0] == '\0')
+            {
+                fprintf(stdout, "\
+  Operation canceled.\n");
+                break;
             }
 
             if (copyString(books[iIndexEntered].title, strTitleBuf, MAXTITL) == NULL)
@@ -539,12 +615,12 @@ int UPDATE(struct book books[])
             else
                 fprintf(stdout, "\
   Title updated.\n");
-
             break;
 
-        case Author:
+        case MENU_OPT_AUTHOR:
             fprintf(stdout, "\
-  Please enter the new author.\n");
+  Please enter the new author.\n\
+  Press [enter] at the start of a line to cancel.");
             char strAuthorBuf[MAXAUTL];
 
             if (s_gets(strAuthorBuf, MAXAUTL) == NULL)
@@ -553,7 +629,13 @@ int UPDATE(struct book books[])
 [ERROR]     Failed to get the new author.\n\
             Please enter a string of length less than %d.\n",
                         MAXAUTL);
-                return 0;
+                break;
+            }
+            else if (strAuthorBuf[0] == '\0')
+            {
+                fprintf(stdout, "\
+  Operation canceled.\n");
+                break;
             }
 
             if (copyString(books[iIndexEntered].author, strAuthorBuf, MAXAUTL) == NULL)
@@ -562,10 +644,9 @@ int UPDATE(struct book books[])
             else
                 fprintf(stdout, "\
   Author updated.\n");
-
             break;
 
-        case Value:
+        case MENU_OPT_VALUE:
             fprintf(stdout, "\
   Please enter the new value.\n");
 
@@ -585,7 +666,6 @@ int UPDATE(struct book books[])
 
             fprintf(stdout, "\
   Value updated.\n");
-
             break;
 
         default:
@@ -607,6 +687,8 @@ int listBooks(const struct book books[], int iCount)
         return 0;
     }
 
+    puts("\nHere is the list of your books:");
+
     if (iCount <= 0)
     {
         puts("No books? Too bad.\n");
@@ -615,10 +697,10 @@ int listBooks(const struct book books[], int iCount)
 
     int iIndex;
 
-    puts("Here is the list of your books:");
     for (iIndex = 0; iIndex < iCount; iIndex++)
-        printf("%s by %s: $%.2f\n",
-               books[iIndex].title, books[iIndex].author, books[iIndex].value);
+        if (books[iIndex].isDeleted == 0)
+            printf("%s by %s: $%.2f\n\n",
+                   books[iIndex].title, books[iIndex].author, books[iIndex].value);
 }
 void showMenu()
 {
@@ -629,4 +711,13 @@ void showMenu()
   2. DELETE\n\
   3. UPDATE\n\
   4. EXIT\n");
+}
+
+int scanfOption(int *piOption)
+{
+    int iRetVal = scanf("%d", piOption);
+    while (getchar() != '\n')
+        continue;
+
+    return iRetVal;
 }
