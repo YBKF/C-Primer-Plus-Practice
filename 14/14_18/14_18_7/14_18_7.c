@@ -75,6 +75,7 @@ int UPDATE(struct book books[], const int *piHighCount);
 int listBooks(const struct book books[], int iCount);
 void showMenu();
 int scanfOption(int *piOption);
+int copyFileTo(FILE *fileSource, FILE *fileDest);
 
 int main(void)
 {
@@ -85,8 +86,8 @@ int main(void)
 
     if ((pbooks = fopen("book.dat", "r+b")) == NULL)
     {
-        fputs("Can't find book.dat file\n", stderr);
-        if ((pbooks = fopen("book.dat", "w+b")) == NULL)
+        fputs("Can't find book.dat file, the file being created.\n", stderr);
+        if ((pbooks = fopen("book.dat", "a+b")) == NULL)
         {
             fputs("Can't create book.dat file\n", stderr);
             exit(1);
@@ -157,10 +158,27 @@ int main(void)
         }
     }
 
-    // TODO 先将数组中未被删除的书目拷贝到另一个数组中，再将这个新的数组写入到文件
-    // TODO 或者定位到已删除的数组并将其删除
+    // 将原文件复制到备份文件，再将原文件长度截为零并将书目数据写入到原文件
+    FILE *pbooksBak;
+    if ((pbooksBak = fopen("book.dat.bak", "wb")) == NULL)
+    {
+        fputs("Can't create book.dat.bak file\n", stderr);
+        exit(EXIT_FAILURE);
+    }
 
-    fseek(pbooks, 0L, SEEK_SET);
+    if (copyFileTo(pbooks, pbooksBak) != 1)
+    {
+        fclose(pbooksBak);
+        exit(EXIT_FAILURE);
+    }
+    fclose(pbooksBak);
+
+    fclose(pbooks);
+    if ((pbooks = fopen("book.dat", "wb")) == NULL)
+    {
+        fputs("Can't open book.dat file.\n", stderr);
+        exit(EXIT_FAILURE);
+    }
 
     for (int i = 0; i < count; i++)
         if (library[i].isDeleted == 0)
@@ -720,4 +738,21 @@ int scanfOption(int *piOption)
         continue;
 
     return iRetVal;
+}
+
+int copyFileTo(FILE *fileSource, FILE *fileDest)
+{
+    if (fileSource == NULL || fileDest == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR] Invalid files, copy failed.\n");
+        return 0;
+    }
+
+    size_t bytes;
+    static char temp[BUFSIZ];
+    while ((bytes = fread(temp, sizeof(char), BUFSIZ, fileSource)) > 0)
+        fwrite(temp, sizeof(char), bytes, fileDest);
+
+    return 1;
 }

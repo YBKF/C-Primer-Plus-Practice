@@ -57,6 +57,7 @@ _Test/t_Test2/
 *.test
 *.cpy
 *.dat
+*.bak
 
 # .vscode
 .vscode/

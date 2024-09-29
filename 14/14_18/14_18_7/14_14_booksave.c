@@ -25,13 +25,12 @@ int main(void)
         exit(1);
     }
     rewind(pbooks); /* 定位到文件开始 */
-    while (count < MAXBKS && fread(&library[count], size,
-                                   1, pbooks) == 1)
+    while (count < MAXBKS && fread(&library[count], size, 1, pbooks) == 1)
     {
         if (count == 0)
             puts("Current contents of book.dat:");
-        printf("%s by %s: $%.2f\n", library[count].title,
-               library[count].author, library[count].value);
+        printf("%s by %s: $%.2f\n",
+               library[count].title, library[count].author, library[count].value);
         count++;
     }
     filecount = count;
