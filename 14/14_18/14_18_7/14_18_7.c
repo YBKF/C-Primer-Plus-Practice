@@ -55,9 +55,6 @@ typedef struct _stack
     const int *limit;
 } STACK;
 
-// struct book;
-// typedef struct _stack STACK;
-
 char *s_gets(char *st, int n);
 char *copyString(char *strTarget, char *strSource, int iSize);
 
@@ -92,7 +89,6 @@ int main(void)
             fputs("Can't create book.dat file\n", stderr);
             exit(1);
         }
-        // exit(1);
     }
 
     rewind(pbooks); /* 定位到文件开始 */
