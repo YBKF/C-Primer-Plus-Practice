@@ -70,7 +70,7 @@ int DELETE(struct book books[], STACK *psDelList, int *piHighCount);
 int UPDATE(struct book books[], const int *piHighCount);
 
 int listBooks(const struct book books[], int iCount);
-void showMenu();
+void showMainMenu();
 int scanfOption(int *piOption);
 int copyFileTo(FILE *fileSource, FILE *fileDest);
 
@@ -110,7 +110,7 @@ int main(void)
     int isEXIT = 0;
     while (!isEXIT)
     {
-        showMenu();
+        showMainMenu();
 
         int option;
         if (scanfOption(&option) != 1)
@@ -716,7 +716,7 @@ int listBooks(const struct book books[], int iCount)
             printf("%s by %s: $%.2f\n\n",
                    books[iIndex].title, books[iIndex].author, books[iIndex].value);
 }
-void showMenu()
+void showMainMenu()
 {
     fprintf(stdout, "\
   What should we do?\n\
