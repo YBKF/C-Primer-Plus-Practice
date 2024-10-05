@@ -48,12 +48,14 @@ typedef struct _Seat
 
 typedef struct _FlightSeats
 {
-    Seat seatsList[SEATS_COUNT];
+    Seat *seatsList;
     unsigned int seatsCount;
 } FlightSeats;
 
+char *s_gets(char *st, int n);
+
 bool initSeat(Seat *seat);
-bool initFlightSeats(FlightSeats *flightSeats);
+bool initFlightSeats(FlightSeats *flightSeats, Seat seats[], unsigned int uiSeatsCount);
 
 void showMainMenu();
 
@@ -66,6 +68,7 @@ bool sortSeatsListByTo(void (*sortFun)(Item itemList), const FlightSeats *flight
 bool showCountOfEmptySeats(const FlightSeats *flightSeats);
 bool listEmptySeats(const FlightSeats *flightSeats);
 bool listSeatsByAlphabeticalOrder(const FlightSeats *flightSeats);
+
 bool SeatAssignmentMenu(FlightSeats *flightSeats);
 bool DelSeatAssignmentMenu(FlightSeats *flightSeats);
 
@@ -73,6 +76,104 @@ int main(int argc, char const *argv[])
 {
 
     return 0;
+}
+
+char *s_gets(char *st, int n)
+{
+    char *ret_val;
+    char *find;
+
+    ret_val = fgets(st, n, stdin);
+    if (ret_val)
+    {
+        find = strchr(st, '\n'); // 查找换行符
+        if (find)                // 如果地址不是 NULL，
+            *find = '\0';        // 在此处放置一个空字符
+        else
+            while (getchar() != '\n')
+                continue; // 清理输入行
+    }
+
+    return ret_val;
+}
+
+/**
+ * - [out] seat
+ */
+bool initSeat(Seat *seat)
+{
+    if (seat == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR]     An error occurred while initialing the seat.\n\
+            Null pointer.\n");
+        return false;
+    }
+
+    *seat = (Seat){
+        .seatNumber = STR_INIT_VOID,
+        .isSeatReserved = 0,
+        .nameOfBooker = (Name){STR_INIT_VOID, STR_INIT_VOID}};
+
+    return true;
+}
+
+/**
+ * - [out] flightSeats
+ * - [in] seats
+ * - [in] uiSeatsCount
+ *
+ * 新建的 FlightSeats 结构在初次使用前，应使用此函数进行初始化。
+ *
+ * [out] flightSeats
+ * flightSeats 是一个 FlightSeats 类型的指针，
+ * 此指针应指向一个（新创建的）未初始化的 FlightSeats 类型的结构。
+ *
+ * [in] seats
+ * seats 是一个 Seat 类型的数组，
+ * 赋给 flightSeats 作为其成员结构。
+ *
+ * [in] uiSeatsCount
+ * uiSeatsCount 是一个无符号整型类型的值，
+ * 赋给 flightSeats 作为其成员结构。
+ *
+ */
+bool initFlightSeats(FlightSeats *flightSeats, Seat seats[], unsigned int uiSeatsCount)
+{
+    if (flightSeats == NULL || seats == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR]     An error occurred while initialing the flightSeats.\n\
+            Null pointer.\n");
+        return false;
+    }
+
+    *flightSeats = (FlightSeats){
+        .seatsList = seats,
+        .seatsCount = uiSeatsCount};
+
+    return true;
+}
+
+unsigned int getCountOfEmptySeats(const FlightSeats *flightSeats)
+{
+    if (flightSeats == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR]     An error occurred while getting the count of the empty seats.\n\
+            Null pointer.\n");
+        return 0;
+    }
+
+    unsigned int uiEmptySeatsCount = 0;
+
+    for (int i = 0; i < flightSeats->seatsCount; i++)
+    {
+        if (flightSeats->seatsList[i].isSeatReserved == 0)
+            uiEmptySeatsCount++;
+    }
+
+    return uiEmptySeatsCount;
 }
 
 void showMainMenu()
