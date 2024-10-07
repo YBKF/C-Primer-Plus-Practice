@@ -19,6 +19,7 @@
  */
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 
 #define NAME_FIRST_MAX_LENGTH (25)
 #define NAME_FIRST_MAX_SIZE (NAME_FIRST_MAX_LENGTH + 1)
@@ -30,8 +31,11 @@
 #define SEATS_COUNT (12)
 
 #define STR_INIT_VOID ("")
+#define STR_BOOL_TRUE ("Yes")
+#define STR_BOOL_FALSE ("No")
 
-typedef Seat Item;
+#define STR_BOOL_LENGTH (3)
+#define STR_BOOL_SIZE (STR_BOOL_LENGTH + 1)
 
 typedef struct _Name
 {
@@ -43,7 +47,7 @@ typedef struct _Seat
 {
     char seatNumber[SEATS_NUMBER_MAX_SIZE];
     bool isSeatReserved;
-    Name nameOfBooker;
+    Name nameOfCustomer;
 } Seat;
 
 typedef struct _FlightSeats
@@ -54,6 +58,8 @@ typedef struct _FlightSeats
 
 char *s_gets(char *st, int n);
 
+bool InsertSort(FlightSeats *flightSeats);
+
 bool initSeat(Seat *seat);
 bool initFlightSeats(FlightSeats *flightSeats, Seat seats[], unsigned int uiSeatsCount);
 
@@ -61,8 +67,7 @@ void showMainMenu();
 
 unsigned int getCountOfEmptySeats(const FlightSeats *flightSeats);
 bool printSeatInfo(const Seat *seat);
-bool isSeatReserved(const Seat *seat);
-bool sortSeatsListByTo(void (*sortFun)(Item itemList), const FlightSeats *flightSeats, FlightSeats *flightSeatsBuf);
+bool sortSeatsListInAlphabeticalOrder(FlightSeats *flightSeats);
 
 // 主菜单操作
 bool showCountOfEmptySeats(const FlightSeats *flightSeats);
@@ -98,6 +103,45 @@ char *s_gets(char *st, int n)
 }
 
 /**
+ * - [in, out] flightSeats
+ *
+ * 使用插入排序算法对座位列表按照“字母表顺序”进行排序。
+ *
+ */
+bool InsertSort(FlightSeats *flightSeats)
+{
+    if (flightSeats == NULL || flightSeats->seatsList == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR]     Failed to sort the list.\n\
+            Null pointer or invalid memory region.\n");
+        return false;
+    }
+
+    if (flightSeats->seatsCount < 2U)
+    {
+        fprintf(stderr, "\
+[ERROR]     No need to sort.\n");
+        return false;
+    }
+
+    unsigned int uiSeatsCount = flightSeats->seatsCount;
+    Seat *pSeats = flightSeats->seatsList;
+
+    Seat seatBuf;
+
+    for (unsigned int uiI = 1; uiI < uiSeatsCount; uiI++)
+        for (unsigned int uiJ = uiI; uiJ > 0 && strcmp(pSeats[uiJ].seatNumber, pSeats[uiJ - 1].seatNumber) < 0; uiJ--)
+        {
+            seatBuf = pSeats[uiJ];
+            pSeats[uiJ] = pSeats[uiJ - 1];
+            pSeats[uiJ - 1] = seatBuf;
+        }
+
+    return true;
+}
+
+/**
  * - [out] seat
  */
 bool initSeat(Seat *seat)
@@ -113,7 +157,7 @@ bool initSeat(Seat *seat)
     *seat = (Seat){
         .seatNumber = STR_INIT_VOID,
         .isSeatReserved = 0,
-        .nameOfBooker = (Name){STR_INIT_VOID, STR_INIT_VOID}};
+        .nameOfCustomer = (Name){STR_INIT_VOID, STR_INIT_VOID}};
 
     return true;
 }
@@ -124,6 +168,7 @@ bool initSeat(Seat *seat)
  * - [in] uiSeatsCount
  *
  * 新建的 FlightSeats 结构在初次使用前，应使用此函数进行初始化。
+ * 若结构成功初始化，则返回 true，否则返回 false。
  *
  * [out] flightSeats
  * flightSeats 是一个 FlightSeats 类型的指针，
@@ -155,12 +200,30 @@ bool initFlightSeats(FlightSeats *flightSeats, Seat seats[], unsigned int uiSeat
     return true;
 }
 
+void showMainMenu()
+{
+    fprintf(stdout, "\
+To choose a function, enter its letter label:\n\
+a) Show number of empty seats\n\
+b) Show list of empty seats\n\
+c) Show alphabetical list of seats\n\
+d) Assign a customer to a seat assignment\n\
+e) Delete a seat assignment\n\
+f) Quit\n");
+}
+
+/**
+ * - [in] flightSeats
+ *
+ * 计算并返回参数结构中空座位的数量。
+ *
+ */
 unsigned int getCountOfEmptySeats(const FlightSeats *flightSeats)
 {
     if (flightSeats == NULL)
     {
         fprintf(stderr, "\
-[ERROR]     An error occurred while getting the count of the empty seats.\n\
+[ERROR]     An error occurred while counting empty seats.\n\
             Null pointer.\n");
         return 0;
     }
@@ -176,14 +239,49 @@ unsigned int getCountOfEmptySeats(const FlightSeats *flightSeats)
     return uiEmptySeatsCount;
 }
 
-void showMainMenu()
+/**
+ * - [in] seat
+ *
+ * 打印座位的信息，此函数主要用于被其他函数调用，通常不独立使用。
+ * 调用成功时返回 true，否则返回 false。
+ *
+ */
+bool printSeatInfo(const Seat *seat)
 {
+    if (seat == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR]     An error occurred while printing seat information.\n\
+            Null pointer.\n");
+        return false;
+    }
+
+    const char *pstrIsSeatReserved = NULL;
+
+    if (seat->isSeatReserved == true)
+        pstrIsSeatReserved = STR_BOOL_TRUE;
+    else
+        pstrIsSeatReserved = STR_BOOL_FALSE;
+
     fprintf(stdout, "\
-To choose a function, enter its letter label:\n\
-a) Show number of empty seats\n\
-b) Show list of empty seats\n\
-c) Show alphabetical list of seats\n\
-d) Assign a customer to a seat assignment\n\
-e) Delete a seat assignment\n\
-f) Quit\n");
+  SeatNumber: %.2s, Reserved: %-3s, CustomerName: %s\n",
+            seat->seatNumber, pstrIsSeatReserved, seat->nameOfCustomer);
+
+    return true;
+}
+
+bool sortSeatsListInAlphabeticalOrder(FlightSeats *flightSeats)
+{
+    if (flightSeats == NULL || flightSeats->seatsList == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR]     Failed to sort the list.\n\
+            Null pointer or invalid memory region.\n");
+        return false;
+    }
+
+    if (InsertSort(flightSeats) == false)
+        return false;
+
+    return true;
 }
