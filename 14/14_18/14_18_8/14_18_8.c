@@ -242,7 +242,7 @@ unsigned int getCountOfEmptySeats(const FlightSeats *flightSeats)
 /**
  * - [in] seat
  *
- * 打印座位的信息，此函数主要用于被其他函数调用，通常不独立使用。
+ * 打印座位的信息，此函数通常不独立使用，主要在其他函数中被调用。
  * 调用成功时返回 true，否则返回 false。
  *
  */
@@ -270,6 +270,9 @@ bool printSeatInfo(const Seat *seat)
     return true;
 }
 
+/**
+ * - [out] flightSeats
+ */
 bool sortSeatsListInAlphabeticalOrder(FlightSeats *flightSeats)
 {
     if (flightSeats == NULL || flightSeats->seatsList == NULL)
@@ -284,4 +287,11 @@ bool sortSeatsListInAlphabeticalOrder(FlightSeats *flightSeats)
         return false;
 
     return true;
+}
+
+/**
+ * - [in] flightSeats
+ */
+bool showCountOfEmptySeats(const FlightSeats *flightSeats)
+{
 }
