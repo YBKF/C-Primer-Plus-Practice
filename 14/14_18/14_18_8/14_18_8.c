@@ -157,7 +157,8 @@ bool initSeat(Seat *seat)
     *seat = (Seat){
         .seatNumber = STR_INIT_VOID,
         .isSeatReserved = 0,
-        .nameOfCustomer = (Name){STR_INIT_VOID, STR_INIT_VOID}};
+        .nameOfCustomer = (Name){.first = STR_INIT_VOID,
+                                 .last = STR_INIT_VOID}};
 
     return true;
 }
@@ -220,11 +221,11 @@ f) Quit\n");
  */
 unsigned int getCountOfEmptySeats(const FlightSeats *flightSeats)
 {
-    if (flightSeats == NULL)
+    if (flightSeats == NULL || flightSeats->seatsList == NULL)
     {
         fprintf(stderr, "\
 [ERROR]     An error occurred while counting empty seats.\n\
-            Null pointer.\n");
+            Null pointer or invalid memory region.\n");
         return 0;
     }
 
@@ -272,6 +273,9 @@ bool printSeatInfo(const Seat *seat)
 
 /**
  * - [out] flightSeats
+ *
+ * 对座位列表以字母表顺序进行排序。
+ *
  */
 bool sortSeatsListInAlphabeticalOrder(FlightSeats *flightSeats)
 {
@@ -291,7 +295,79 @@ bool sortSeatsListInAlphabeticalOrder(FlightSeats *flightSeats)
 
 /**
  * - [in] flightSeats
+ *
+ * 向标准输出打印座位列表中空座位的数量。
+ *
  */
 bool showCountOfEmptySeats(const FlightSeats *flightSeats)
 {
+    if (flightSeats == NULL || flightSeats->seatsList == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR]     An error occurred while counting empty seats.\n\
+            Null pointer or invalid memory region.\n");
+        return false;
+    }
+
+    fprintf(stdout, "\
+  Empty Seats: %u\n",
+            getCountOfEmptySeats(flightSeats));
+
+    return true;
+}
+
+/**
+ * - [in] flightSeats
+ *
+ * 列出列表中空座位的信息。
+ *
+ */
+bool listEmptySeats(const FlightSeats *flightSeats)
+{
+    if (flightSeats == NULL || flightSeats->seatsList == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR]     Failed to list the empty seats.\n\
+            Null pointer or invalid memory region.\n");
+        return false;
+    }
+
+    unsigned int uiSeatsCount = flightSeats->seatsCount;
+    const Seat *pSeats = flightSeats->seatsList;
+
+    for (unsigned int ui = 0; ui < uiSeatsCount; ui++)
+        printSeatInfo(&pSeats[ui]);
+
+    return true;
+}
+
+/**
+ * - [in] flightSeats
+ *
+ * 按座位编号的字母顺序打印列表中所有座位的信息。
+ *
+ */
+bool listSeatsByAlphabeticalOrder(const FlightSeats *flightSeats)
+{
+    if (flightSeats == NULL || flightSeats->seatsList == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR]     Failed to list the seats.\n\
+            Null pointer or invalid memory region.\n");
+        return false;
+    }
+
+    Seat seatsTemp[SEATS_COUNT];
+    unsigned int uiSeatsCount = SEATS_COUNT < flightSeats->seatsCount
+                                    ? SEATS_COUNT
+                                    : flightSeats->seatsCount;
+
+    for (unsigned int ui = 0; ui < uiSeatsCount; ui++)
+        seatsTemp[ui] = flightSeats->seatsList[ui];
+
+        for (unsigned int ui = 0; ui < uiSeatsCount; ui++)
+        {
+            /* code */
+        }
+        
 }
