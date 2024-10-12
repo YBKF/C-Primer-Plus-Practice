@@ -18,8 +18,10 @@
  * 假设这架飞机拥有两排座位，每排 6 座，总共 12 个座位，所以座位编号可以为 A1 - B6。
  */
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <ctype.h>
 
 #define NAME_FIRST_MAX_LENGTH (25)
 #define NAME_FIRST_MAX_SIZE (NAME_FIRST_MAX_LENGTH + 1)
@@ -57,6 +59,9 @@ typedef struct _FlightSeats
 } FlightSeats;
 
 char *s_gets(char *st, int n);
+char *getNSizeString(char *str, int n);
+void transStrToUpperCase(char *str);
+char *copyString(char *strTarget, char *strSource, int iSize);
 
 bool InsertSort(FlightSeats *flightSeats);
 
@@ -67,7 +72,9 @@ void showMainMenu();
 
 unsigned int getCountOfEmptySeats(const FlightSeats *flightSeats);
 bool printSeatInfo(const Seat *seat);
+bool numberTheFlightSeats(FlightSeats *flightSeats, int iCol, int iRow);
 bool sortSeatsListInAlphabeticalOrder(FlightSeats *flightSeats);
+Seat *findSeatByNum(const FlightSeats *flightSeats, const char *strNum);
 
 // 主菜单操作
 bool showCountOfEmptySeats(const FlightSeats *flightSeats);
@@ -100,6 +107,51 @@ char *s_gets(char *st, int n)
     }
 
     return ret_val;
+}
+
+char *getNSizeString(char *str, int n)
+{
+    char *retVal;
+    char *find;
+
+    retVal = fgets(str, n, stdin);
+    if (retVal)
+    {
+        find = strchr(str, '\n');
+        if (find)
+            *find = '\0';
+    }
+
+    return retVal;
+}
+
+void transStrToUpperCase(char *str)
+{
+    fprintf(stderr, "\
+[ERROR]     Failed to trans the string to uppercase.\n\
+            Null pointer.\n");
+
+    int iStrLength = strlen(str);
+
+    for (int i = 0; i < iStrLength; i++)
+        str[i] = toupper(str[i]);
+}
+
+char *copyString(char *strTarget, char *strSource, int iSize)
+{
+    if (strTarget == NULL || strSource == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR]     An error occurred while copying a string.\n\
+            Because of the parameter is a null pointer or invalid memory region.\n");
+        return NULL;
+    }
+
+    char *retVal;
+    retVal = strncpy(strTarget, strSource, iSize - 1);
+    strTarget[iSize - 1] = '\0';
+
+    return retVal;
 }
 
 /**
@@ -295,6 +347,32 @@ bool sortSeatsListInAlphabeticalOrder(FlightSeats *flightSeats)
 
 /**
  * - [in] flightSeats
+ * - [in] strNum
+ *
+ * 通过编号来查找座位列表中是否有匹配的座位，匹配则返回此座位的地址，否则返回空指针。
+ *
+ */
+Seat *findSeatByNum(const FlightSeats *flightSeats, const char *strNum)
+{
+    if (flightSeats == NULL || flightSeats->seatsList == NULL || strNum == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR]     An error occurred while finding a seat.\n\
+            Null pointer or invalid memory region.\n");
+        return NULL;
+    }
+
+    for (unsigned int ui = 0; ui < flightSeats->seatsCount; ui++)
+    {
+        if (0 == strcmp(flightSeats->seatsList[ui].seatNumber, strNum))
+            return (&flightSeats->seatsList[ui]);
+    }
+
+    return NULL;
+}
+
+/**
+ * - [in] flightSeats
  *
  * 向标准输出打印座位列表中空座位的数量。
  *
@@ -358,16 +436,166 @@ bool listSeatsByAlphabeticalOrder(const FlightSeats *flightSeats)
     }
 
     Seat seatsTemp[SEATS_COUNT];
+    FlightSeats flightSeatsTemp;
+
+    // 选择最小的，以防止数组下标“溢出”
     unsigned int uiSeatsCount = SEATS_COUNT < flightSeats->seatsCount
                                     ? SEATS_COUNT
                                     : flightSeats->seatsCount;
 
-    for (unsigned int ui = 0; ui < uiSeatsCount; ui++)
-        seatsTemp[ui] = flightSeats->seatsList[ui];
+    if (initFlightSeats(&flightSeatsTemp, seatsTemp, uiSeatsCount) == false)
+        return false;
 
-        for (unsigned int ui = 0; ui < uiSeatsCount; ui++)
+    for (unsigned int ui = 0; ui < uiSeatsCount; ui++)
+        flightSeatsTemp.seatsList[ui] = flightSeats->seatsList[ui];
+
+    sortSeatsListInAlphabeticalOrder(&flightSeatsTemp);
+    for (unsigned int ui = 0; ui < uiSeatsCount; ui++)
+        printSeatInfo(&flightSeatsTemp.seatsList[ui]);
+
+    return true;
+}
+
+bool SeatAssignmentMenu(FlightSeats *flightSeats)
+{
+    if (flightSeats == NULL || flightSeats->seatsList == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR]     Failed to access the seat assignment menu.\n\
+            Null pointer or invalid memory region.\n");
+        return false;
+    }
+
+    if (getCountOfEmptySeats(flightSeats) == 0)
+    {
+        fprintf(stderr, "\
+[ERROR]     Full list.\n");
+        return false;
+    }
+
+    Seat *pSeatFound;
+
+    Seat seatBuf;
+    initSeat(&seatBuf);
+
+    // TODO 先提示输入名字，然后显示空座位，输入座位编号后检查座位是否已被预订，若已被预订则继续提示输入编号，输入成功后返回主菜单，输入随时可以被取消
+
+    // 开始输入名字
+    bool isNameDone = false;
+    while (!isNameDone)
+    {
+        fprintf(stdout, "\
+  Enter your name: (Enter [Ctrl] + [z] to cancel)\n");
+        fgets(seatBuf.nameOfCustomer.first, NAME_FIRST_MAX_LENGTH, stdin);
+        int iRetValFi = getNSizeString(seatBuf.nameOfCustomer.first, NAME_FIRST_MAX_SIZE);
+        if (iRetValFi == NULL)
+            break;
+
+        int iRetValLa = getNSizeString(seatBuf.nameOfCustomer.last, NAME_LAST_MAX_SIZE);
+        if (iRetValLa == NULL)
+            break;
+
+        while (getchar() != '\n')
+            continue;
+
+        isNameDone = true;
+    }
+    while (getchar() != '\n')
+        continue;
+
+    if (!isNameDone)
+    {
+        fprintf(stdout, "\
+  Canceled.\n");
+        return false;
+    }
+    else
+    {
+        fprintf(stdout, "\
+  Your name: \"%s %s\"\n",
+                seatBuf.nameOfCustomer.first, seatBuf.nameOfCustomer.last);
+    }
+
+    // 开始输入编号
+    bool isNumberDone = false;
+    while (!isNumberDone)
+    {
+        // 显示空座位信息
+        listEmptySeats(&flightSeats);
+
+        fprintf(stdout, "\
+  Enter the number of the seat you wish to reserve: (Enter [Ctrl] + [z] to cancel)\n");
+        char strNumBuf[SEATS_NUMBER_MAX_SIZE];
+
+        int iNumRetVal = getNSizeString(strNumBuf, SEATS_NUMBER_MAX_SIZE);
+        while (getchar() != '\n')
+            continue;
+        if (iNumRetVal == NULL)
+            break;
+
+        transStrToUpperCase(strNumBuf);
+        Seat *pSeatFind;
+
+        if ((pSeatFind = findSeatByNum(flightSeats, strNumBuf)) == NULL)
         {
-            /* code */
+            fprintf(stderr, "\
+[ERROR] Such a seat not found.\n");
+            fprintf(stdout, "\
+  Please re-enter.\n");
+            continue;
         }
-        
+
+        if (pSeatFind->isSeatReserved == true)
+        {
+            fprintf(stdout, "\
+  The seat \"%s\" has already reserved.",
+                    pSeatFind->seatNumber);
+            fprintf(stdout, "\
+  Please re-enter.\n");
+            continue;
+        }
+        pSeatFound = pSeatFind;
+        copyString(seatBuf.seatNumber, strNumBuf, SEATS_NUMBER_MAX_SIZE);
+
+        isNumberDone == true;
+    }
+
+    if (!isNumberDone)
+    {
+        fprintf(stdout, "\
+  Canceled.\n");
+        return false;
+    }
+    else
+    {
+        fprintf(stdout, "\
+  Seat number reserved: \"%s\"\n",
+                seatBuf.seatNumber);
+        seatBuf.isSeatReserved = true;
+    }
+
+    *pSeatFound = seatBuf;
+
+    fprintf(stdout, "\
+  Done. Seat number %s has reserved.\n");
+
+    return true;
+}
+
+bool DelSeatAssignmentMenu(FlightSeats *flightSeats)
+{
+    if (flightSeats == NULL || flightSeats->seatsList == NULL)
+    {
+        fprintf(stderr, "\
+[ERROR]     Failed to access the seat assignment deletion menu.\n\
+            Null pointer or invalid memory region.\n");
+        return false;
+    }
+
+    if (getCountOfEmptySeats(flightSeats) >= flightSeats->seatsCount)
+    {
+        fprintf(stderr, "\
+[ERROR]     Empty list.\n");
+        return false;
+    }
 }
