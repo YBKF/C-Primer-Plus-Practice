@@ -58,6 +58,8 @@ typedef struct _FlightSeats
 
 char *s_gets(char *st, int n);
 char *getNSizeString(char *str, int n);
+char getcharOpt();
+
 void transStrToUpperCase(char *str);
 char *copyString(char *strTarget, char *strSource, int iSize);
 
@@ -75,6 +77,7 @@ bool sortSeatsListInAlphabeticalOrder(FlightSeats *flightSeats);
 Seat *findSeatByNum(const FlightSeats *flightSeats, unsigned int uiNum);
 
 // 主菜单操作
+
 bool showCountOfEmptySeats(const FlightSeats *flightSeats);
 bool listEmptySeats(const FlightSeats *flightSeats);
 bool listSeatsByAlphabeticalOrder(const FlightSeats *flightSeats);
@@ -84,6 +87,57 @@ bool DelSeatAssignmentMenu(FlightSeats *flightSeats);
 
 int main(int argc, char const *argv[])
 {
+    Seat seats[SEATS_COUNT];
+    for (int i = 0; i < SEATS_COUNT; i++)
+        initSeat(&seats[i]);
+
+    FlightSeats flightSeats;
+    initFlightSeats(&flightSeats, seats, (unsigned int)SEATS_COUNT);
+    numberTheFlightSeats(&flightSeats);
+
+    char chOpt;
+
+    bool isQuitted = false;
+    while (!isQuitted)
+    {
+        showMainMenu();
+        chOpt = getcharOpt();
+
+        switch (chOpt)
+        {
+        case 'a':
+            showCountOfEmptySeats(&flightSeats);
+            break;
+
+        case 'b':
+            listEmptySeats(&flightSeats);
+            break;
+
+        case 'c':
+            listSeatsByAlphabeticalOrder(&flightSeats);
+            break;
+
+        case 'd':
+            SeatAssignmentMenu(&flightSeats);
+            break;
+
+        case 'e':
+            DelSeatAssignmentMenu(&flightSeats);
+            break;
+
+        case 'f':
+            isQuitted = true;
+            break;
+
+        default:
+            fprintf(stderr, "\
+[ERROR]     Invalid option.\n");
+            break;
+        }
+    }
+
+    fprintf(stdout, "\
+  Quitted.\n");
 
     return 0;
 }
@@ -121,6 +175,24 @@ char *getNSizeString(char *str, int n)
     }
 
     return retVal;
+}
+
+/**
+ * 从标准输入中仅获取一个字符，
+ * 输入仅为一个字符时，将返回输入的这个字符；
+ * 输入多于一个字符时，将返回一个空字符，且缓冲区中的其他字符将被清除。
+ */
+char getcharOpt()
+{
+    char chBuf;
+    chBuf = getchar();
+    if (getchar() != '\n')
+    {
+        while (getchar() != '\n')
+            continue;
+        return '\0';
+    }
+    return chBuf;
 }
 
 void transStrToUpperCase(char *str)
@@ -255,12 +327,12 @@ void showMainMenu()
 {
     fprintf(stdout, "\
 To choose a function, enter its letter label:\n\
-a) Show number of empty seats\n\
-b) Show list of empty seats\n\
-c) Show alphabetical list of seats\n\
-d) Assign a customer to a seat assignment\n\
-e) Delete a seat assignment\n\
-f) Quit\n");
+  a) Show number of empty seats\n\
+  b) Show list of empty seats\n\
+  c) Show alphabetical list of seats\n\
+  d) Assign a customer to a seat assignment\n\
+  e) Delete a seat assignment\n\
+  f) Quit\n");
 }
 
 /**
@@ -487,6 +559,7 @@ bool listSeatsByAlphabeticalOrder(const FlightSeats *flightSeats)
     return true;
 }
 
+// TODO 使用新空行的回车作为取消本次输入的操作，而不是 EOF；输入名字时（无法一次性输入完毕），应当在检测到一个空格时结束函数
 bool SeatAssignmentMenu(FlightSeats *flightSeats)
 {
     if (flightSeats == NULL || flightSeats->seatsList == NULL)
@@ -517,7 +590,6 @@ bool SeatAssignmentMenu(FlightSeats *flightSeats)
     {
         fprintf(stdout, "\
   Enter your name: (Enter [Ctrl] + [z] to cancel)\n");
-        fgets(seatBuf.nameOfCustomer.first, NAME_FIRST_MAX_LENGTH, stdin);
         char *pchRetValFi = getNSizeString(seatBuf.nameOfCustomer.first, NAME_FIRST_MAX_SIZE);
         if (pchRetValFi == NULL)
             break;
