@@ -14,9 +14,6 @@
  * c.该程序能成功执行上面给出的菜单。选择d)和e)要提示用户进行额外输入，每个选项都能让用户中止输入。
  * d.执行特定程序后，该程序再次显示菜单，除非用户选择f)。
  */
-/**
- * 假设这架飞机拥有两排座位，每排 6 座，总共 12 个座位，所以座位编号可以为 A1 - B6。
- */
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -48,7 +45,7 @@ typedef struct _Name
 
 typedef struct _Seat
 {
-    char seatNumber[SEATS_NUMBER_MAX_SIZE];
+    unsigned int seatNumber;
     bool isSeatReserved;
     Name nameOfCustomer;
 } Seat;
@@ -73,9 +70,9 @@ void showMainMenu();
 
 unsigned int getCountOfEmptySeats(const FlightSeats *flightSeats);
 bool printSeatInfo(const Seat *seat);
-bool numberTheFlightSeats(FlightSeats *flightSeats, int iCol, int iRow);
+bool numberTheFlightSeats(FlightSeats *flightSeats);
 bool sortSeatsListInAlphabeticalOrder(FlightSeats *flightSeats);
-Seat *findSeatByNum(const FlightSeats *flightSeats, const char *strNum);
+Seat *findSeatByNum(const FlightSeats *flightSeats, unsigned int uiNum);
 
 // 主菜单操作
 bool showCountOfEmptySeats(const FlightSeats *flightSeats);
@@ -184,7 +181,7 @@ bool InsertSort(FlightSeats *flightSeats)
     Seat seatBuf;
 
     for (unsigned int uiI = 1; uiI < uiSeatsCount; uiI++)
-        for (unsigned int uiJ = uiI; uiJ > 0 && strcmp(pSeats[uiJ].seatNumber, pSeats[uiJ - 1].seatNumber) < 0; uiJ--)
+        for (unsigned int uiJ = uiI; uiJ > 0 && pSeats[uiJ].seatNumber < pSeats[uiJ - 1].seatNumber; uiJ--)
         {
             seatBuf = pSeats[uiJ];
             pSeats[uiJ] = pSeats[uiJ - 1];
@@ -208,7 +205,7 @@ bool initSeat(Seat *seat)
     }
 
     *seat = (Seat){
-        .seatNumber = STR_INIT_VOID,
+        .seatNumber = 0U,
         .isSeatReserved = 0,
         .nameOfCustomer = (Name){.first = STR_INIT_VOID,
                                  .last = STR_INIT_VOID}};
@@ -286,7 +283,7 @@ unsigned int getCountOfEmptySeats(const FlightSeats *flightSeats)
 
     for (int i = 0; i < flightSeats->seatsCount; i++)
     {
-        if (flightSeats->seatsList[i].isSeatReserved == 0)
+        if (flightSeats->seatsList[i].isSeatReserved == false)
             uiEmptySeatsCount++;
     }
 
@@ -318,20 +315,23 @@ bool printSeatInfo(const Seat *seat)
         pstrIsSeatReserved = STR_BOOL_FALSE;
 
     fprintf(stdout, "\
-  SeatNumber: %.2s, Reserved: %-3s, CustomerName: %s\n",
-            seat->seatNumber, pstrIsSeatReserved, seat->nameOfCustomer);
+  SeatNumber: %.3u, Reserved: %-3s, CustomerName: %s %s\n",
+            seat->seatNumber,
+            pstrIsSeatReserved,
+            seat->nameOfCustomer.first,
+            seat->nameOfCustomer.last);
 
     return true;
 }
 
 /**
  * - [out] flightSeats
- * - [in] iCol
- * - [in] iRow
  *
+ * 自动为座位列表中各座位进行编号，通常以 1 为编号起始值。
+ * 通常在对 FlightSeats 类型的结构进行初始化后，应调用这个函数。
  *
  */
-bool numberTheFlightSeats(FlightSeats *flightSeats, int iCol, int iRow)
+bool numberTheFlightSeats(FlightSeats *flightSeats)
 {
     if (flightSeats == NULL || flightSeats->seatsList == NULL)
     {
@@ -341,17 +341,17 @@ bool numberTheFlightSeats(FlightSeats *flightSeats, int iCol, int iRow)
         return false;
     }
 
-    if (iCol < 1 || iRow < 1)
+    if (flightSeats->seatsCount == 0)
     {
         fprintf(stderr, "\
-[ERROR]     Columns or Rows must greater than 0.\n");
+  There aren't any seats.\n");
         return false;
     }
 
-    if (flightSeats->seatsCount < iCol * iRow)
-    {
-        
-    }
+    for (unsigned int ui = 0; ui < flightSeats->seatsCount; ui++)
+        flightSeats->seatsList[ui].seatNumber = ui + 1;
+
+    return true;
 }
 
 /**
@@ -378,14 +378,14 @@ bool sortSeatsListInAlphabeticalOrder(FlightSeats *flightSeats)
 
 /**
  * - [in] flightSeats
- * - [in] strNum
+ * - [in] uiNum
  *
  * 通过编号来查找座位列表中是否有匹配的座位，匹配则返回此座位的地址，否则返回空指针。
  *
  */
-Seat *findSeatByNum(const FlightSeats *flightSeats, const char *strNum)
+Seat *findSeatByNum(const FlightSeats *flightSeats, unsigned int uiNum)
 {
-    if (flightSeats == NULL || flightSeats->seatsList == NULL || strNum == NULL)
+    if (flightSeats == NULL || flightSeats->seatsList == NULL)
     {
         fprintf(stderr, "\
 [ERROR]     An error occurred while finding a seat.\n\
@@ -395,7 +395,7 @@ Seat *findSeatByNum(const FlightSeats *flightSeats, const char *strNum)
 
     for (unsigned int ui = 0; ui < flightSeats->seatsCount; ui++)
     {
-        if (0 == strcmp(flightSeats->seatsList[ui].seatNumber, strNum))
+        if (flightSeats->seatsList[ui].seatNumber == uiNum)
             return (&flightSeats->seatsList[ui]);
     }
 
@@ -556,18 +556,23 @@ bool SeatAssignmentMenu(FlightSeats *flightSeats)
 
         fprintf(stdout, "\
   Enter the number of the seat you wish to reserve: (Enter [Ctrl] + [z] to cancel)\n");
-        char strNumBuf[SEATS_NUMBER_MAX_SIZE];
+        unsigned int uiNumBuf;
 
-        char *pchNumRetVal = getNSizeString(strNumBuf, SEATS_NUMBER_MAX_SIZE);
+        int iScfRetVal = scanf("%u", &uiNumBuf);
         while (getchar() != '\n')
             continue;
-        if (pchNumRetVal == NULL)
+        if (iScfRetVal == EOF)
             break;
+        if (iScfRetVal != 1)
+        {
+            fprintf(stdout, "\
+  Please enter a number.\n");
+            continue;
+        }
 
-        transStrToUpperCase(strNumBuf);
         Seat *pSeatFind;
 
-        if ((pSeatFind = findSeatByNum(flightSeats, strNumBuf)) == NULL)
+        if ((pSeatFind = findSeatByNum(flightSeats, uiNumBuf)) == NULL)
         {
             fprintf(stderr, "\
 [ERROR] Such a seat not found.\n");
@@ -579,16 +584,16 @@ bool SeatAssignmentMenu(FlightSeats *flightSeats)
         if (pSeatFind->isSeatReserved == true)
         {
             fprintf(stdout, "\
-  The seat \"%s\" has already reserved.",
+  The seat \"%.3u\" has already reserved.",
                     pSeatFind->seatNumber);
             fprintf(stdout, "\
   Please re-enter.\n");
             continue;
         }
         pSeatFound = pSeatFind;
-        copyString(seatBuf.seatNumber, strNumBuf, SEATS_NUMBER_MAX_SIZE);
+        seatBuf.seatNumber = uiNumBuf;
 
-        isNumberDone == true;
+        isNumberDone = true;
     }
 
     if (!isNumberDone)
@@ -600,7 +605,7 @@ bool SeatAssignmentMenu(FlightSeats *flightSeats)
     else
     {
         fprintf(stdout, "\
-  Seat number reserved: \"%s\"\n",
+  Seat number reserved: \"%.3u\"\n",
                 seatBuf.seatNumber);
         seatBuf.isSeatReserved = true;
     }
@@ -608,7 +613,8 @@ bool SeatAssignmentMenu(FlightSeats *flightSeats)
     *pSeatFound = seatBuf;
 
     fprintf(stdout, "\
-  Done. Seat number %s has reserved.\n");
+  Done. Seat number %.3u has reserved.\n",
+            seatBuf.seatNumber);
 
     return true;
 }
@@ -639,18 +645,23 @@ bool DelSeatAssignmentMenu(FlightSeats *flightSeats)
 
         fprintf(stdout, "\
   Enter the number of the seat you wish to delete: (Enter [Ctrl] + [z] to cancel)\n");
-        char strNumBuf[SEATS_NUMBER_MAX_SIZE];
+        unsigned int uiNumBuf;
 
-        char *pchNumRetVal = getNSizeString(strNumBuf, SEATS_NUMBER_MAX_SIZE);
+        int iScfRetVal = scanf("%u", &uiNumBuf);
         while (getchar() != '\n')
             continue;
-        if (pchNumRetVal == NULL)
+        if (iScfRetVal == EOF)
             break;
+        if (iScfRetVal != 1)
+        {
+            fprintf(stdout, "\
+  Please enter a number.\n");
+            continue;
+        }
 
-        transStrToUpperCase(strNumBuf);
         Seat *pSeatFind;
 
-        if ((pSeatFind = findSeatByNum(flightSeats, strNumBuf)) == NULL)
+        if ((pSeatFind = findSeatByNum(flightSeats, uiNumBuf)) == NULL)
         {
             fprintf(stderr, "\
 [ERROR] Such a seat not found.\n");
@@ -659,12 +670,13 @@ bool DelSeatAssignmentMenu(FlightSeats *flightSeats)
             continue;
         }
 
+        // 当座位未被预定时且客户的名字为空，不对座位进行删除
         if (pSeatFind->isSeatReserved == false &&
-            pSeatFind->nameOfCustomer.first != STR_VOID &&
-            pSeatFind->nameOfCustomer.last != STR_VOID)
+            strcmp(pSeatFind->nameOfCustomer.first, STR_VOID) == 0 &&
+            strcmp(pSeatFind->nameOfCustomer.last, STR_VOID) == 0)
         {
             fprintf(stdout, "\
-  The seat \"%s\" has not reserved.",
+  The seat \"%.3u\" has not reserved.\n",
                     pSeatFind->seatNumber);
             fprintf(stdout, "\
   Please re-enter.\n");
