@@ -24,8 +24,8 @@
 #define NAME_FIRST_MAX_SIZE (NAME_FIRST_MAX_LENGTH + 1)
 #define NAME_LAST_MAX_LENGTH (25)
 #define NAME_LAST_MAX_SIZE (NAME_LAST_MAX_LENGTH + 1)
-#define SEATS_NUMBER_MAX_LENGTH (10)
-#define SEATS_NUMBER_MAX_SIZE (SEATS_NUMBER_MAX_LENGTH + 1)
+#define STR_NUM_MAX_LENGTH (4)
+#define STR_NUM_MAX_SIZE (STR_NUM_MAX_LENGTH + 1)
 
 #define SEATS_COUNT (12)
 
@@ -57,7 +57,6 @@ typedef struct _FlightSeats
 } FlightSeats;
 
 char *s_gets(char *st, int n);
-char *getNSizeString(char *str, int n);
 char getcharOpt();
 
 void transStrToUpperCase(char *str);
@@ -159,22 +158,6 @@ char *s_gets(char *st, int n)
     }
 
     return ret_val;
-}
-
-char *getNSizeString(char *str, int n)
-{
-    char *retVal;
-    char *find;
-
-    retVal = fgets(str, n, stdin);
-    if (retVal)
-    {
-        find = strchr(str, '\n');
-        if (find)
-            *find = '\0';
-    }
-
-    return retVal;
 }
 
 /**
@@ -517,7 +500,8 @@ bool listEmptySeats(const FlightSeats *flightSeats)
     const Seat *pSeats = flightSeats->seatsList;
 
     for (unsigned int ui = 0; ui < uiSeatsCount; ui++)
-        printSeatInfo(&pSeats[ui]);
+        if (pSeats[ui].isSeatReserved == false)
+            printSeatInfo(&pSeats[ui]);
 
     return true;
 }
@@ -559,7 +543,6 @@ bool listSeatsByAlphabeticalOrder(const FlightSeats *flightSeats)
     return true;
 }
 
-// TODO 使用新空行的回车作为取消本次输入的操作，而不是 EOF；输入名字时（无法一次性输入完毕），应当在检测到一个空格时结束函数
 bool SeatAssignmentMenu(FlightSeats *flightSeats)
 {
     if (flightSeats == NULL || flightSeats->seatsList == NULL)
@@ -582,29 +565,24 @@ bool SeatAssignmentMenu(FlightSeats *flightSeats)
     Seat seatBuf;
     initSeat(&seatBuf);
 
-    // TODO 先提示输入名字，然后显示空座位，输入座位编号后检查座位是否已被预订，若已被预订则继续提示输入编号，输入成功后返回主菜单，输入随时可以被取消
-
     // 开始输入名字
     bool isNameDone = false; // 用于区分输入中被取消还是输入成功
     while (!isNameDone)
     {
         fprintf(stdout, "\
-  Enter your name: (Enter [Ctrl] + [z] to cancel)\n");
-        char *pchRetValFi = getNSizeString(seatBuf.nameOfCustomer.first, NAME_FIRST_MAX_SIZE);
+  Enter your first name: (Enter [Ctrl] + [z] to cancel)\n");
+        char *pchRetValFi = s_gets(seatBuf.nameOfCustomer.first, NAME_FIRST_MAX_SIZE);
         if (pchRetValFi == NULL)
             break;
 
-        char *pchRetValLa = getNSizeString(seatBuf.nameOfCustomer.last, NAME_LAST_MAX_SIZE);
+        fprintf(stdout, "\
+  Enter your last name: (Enter [Ctrl] + [z] to cancel)\n");
+        char *pchRetValLa = s_gets(seatBuf.nameOfCustomer.last, NAME_LAST_MAX_SIZE);
         if (pchRetValLa == NULL)
             break;
 
-        while (getchar() != '\n')
-            continue;
-
         isNameDone = true;
     }
-    while (getchar() != '\n')
-        continue;
 
     if (!isNameDone)
     {
@@ -629,18 +607,13 @@ bool SeatAssignmentMenu(FlightSeats *flightSeats)
         fprintf(stdout, "\
   Enter the number of the seat you wish to reserve: (Enter [Ctrl] + [z] to cancel)\n");
         unsigned int uiNumBuf;
+        char strNumUnconverted[STR_NUM_MAX_SIZE];
 
-        int iScfRetVal = scanf("%u", &uiNumBuf);
-        while (getchar() != '\n')
-            continue;
-        if (iScfRetVal == EOF)
+        char *pchRetVal = s_gets(strNumUnconverted, STR_NUM_MAX_SIZE);
+        if (pchRetVal == NULL)
             break;
-        if (iScfRetVal != 1)
-        {
-            fprintf(stdout, "\
-  Please enter a number.\n");
-            continue;
-        }
+
+        uiNumBuf = (unsigned int)atoi(strNumUnconverted);
 
         Seat *pSeatFind;
 
@@ -662,7 +635,7 @@ bool SeatAssignmentMenu(FlightSeats *flightSeats)
   Please re-enter.\n");
             continue;
         }
-        pSeatFound = pSeatFind;
+        pSeatFound = pSeatFind; // 将查找到的座位的地址传出到循环外部
         seatBuf.seatNumber = uiNumBuf;
 
         isNumberDone = true;
@@ -682,11 +655,12 @@ bool SeatAssignmentMenu(FlightSeats *flightSeats)
         seatBuf.isSeatReserved = true;
     }
 
+    // 完成所有步骤后，最后将座位缓存中的信息复制到已查找到的座位的地址处
     *pSeatFound = seatBuf;
 
     fprintf(stdout, "\
   Done. Seat number %.3u has reserved.\n",
-            seatBuf.seatNumber);
+            pSeatFound->seatNumber);
 
     return true;
 }
@@ -718,18 +692,13 @@ bool DelSeatAssignmentMenu(FlightSeats *flightSeats)
         fprintf(stdout, "\
   Enter the number of the seat you wish to delete: (Enter [Ctrl] + [z] to cancel)\n");
         unsigned int uiNumBuf;
+        char strNumUnconverted[STR_NUM_MAX_SIZE];
 
-        int iScfRetVal = scanf("%u", &uiNumBuf);
-        while (getchar() != '\n')
-            continue;
-        if (iScfRetVal == EOF)
+        char *pchRetVal = s_gets(strNumUnconverted, STR_NUM_MAX_SIZE);
+        if (pchRetVal == NULL)
             break;
-        if (iScfRetVal != 1)
-        {
-            fprintf(stdout, "\
-  Please enter a number.\n");
-            continue;
-        }
+
+        uiNumBuf = (unsigned int)atoi(strNumUnconverted);
 
         Seat *pSeatFind;
 
@@ -768,6 +737,9 @@ bool DelSeatAssignmentMenu(FlightSeats *flightSeats)
   Canceled.\n");
         return false;
     }
+
+    fprintf(stdout, "\
+  Done.\n");
 
     return true;
 }
