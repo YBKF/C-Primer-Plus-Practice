@@ -20,7 +20,6 @@
 #define STACK_MAX_SIZE (MAXBKS)
 #define STACK_ERROR_CODE (-1)
 
-#define OPTION_STR
 #define VOID_STR ("")
 #define INIT_STR VOID_STR
 
@@ -38,7 +37,6 @@ enum UpdateMenuOption
     MENU_OPT_AUTHOR,
     MENU_OPT_VALUE,
     MENU_OPT_RET
-
 };
 struct book
 { /* 建立 book 模板 */
