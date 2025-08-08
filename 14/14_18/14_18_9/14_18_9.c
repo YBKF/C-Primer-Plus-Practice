@@ -11,67 +11,145 @@
  * TODO 添加新的菜单，根据新菜单的选项生成对应的参数，将参数传入 14_18_8 的主程序中
  *
  */
-#include <stdio.h>
 #include "14_18_9.h"
 
 static const char *const strFlightNum[FLIGHT_COUNT] = {"102", "311", "444", "519"};
 
-int flightMenu(FlightSeats *flightSeats);
+int flightMenu(Flight *pFlight);
 
 int main(int argc, char const *argv[])
 {
+    Flight flightArr[FLIGHT_COUNT];
+
     for (int i = 0; i < FLIGHT_COUNT; i++)
     {
-        fprintf(stdout, "\
-Flight Number: %s\n",
-                strFlightNum[i]);
+        FlightSeats flightSeatsTemp;
+
+        initFlightSeats(&flightSeatsTemp, (unsigned int)SEATS_COUNT);
+        numberTheFlightSeats(&flightSeatsTemp);
+        initFlight(&flightArr[i], strFlightNum[i], &flightSeatsTemp);
+    }
+
+    char strOpt[STR_FLIGHTS_INDEX_LENGTH] = {""};
+
+    bool isQuitted = false;
+    while (!isQuitted)
+    {
+        showMainMenu(flightArr, FLIGHT_COUNT);
+
+        if (s_gets(strOpt, STR_FLIGHTS_INDEX_LENGTH) == NULL)
+        {
+            fprintf(stderr, "\n\
+Input interrupted. Exiting...\n");
+            exit(EXIT_FAILURE);
+        }
+
+        // 检查是否只有一个字符，且这个字符是否为 'q'
+        if (strOpt[1] == '\0' && strOpt[0] == 'q')
+        {
+            fprintf(stdout, "\
+Quitted.\n");
+            isQuitted = true;
+            break;
+        }
+
+        // 确认字符串长度
+        int iStrOptLength = -1;
+        while (strOpt[++iStrOptLength])
+            continue;
+
+        // 检查字符串中是否全部为数字字符
+        bool isAllDigit = true;
+        while (iStrOptLength--)
+        {
+            if (!isdigit(strOpt[iStrOptLength]))
+            {
+                fprintf(stderr, "\
+[ERROR]     Invalid option.\n");
+                isAllDigit = false;
+                break;
+            }
+        }
+
+        // 字符串中有非数字字符，则重新开始
+        if (!isAllDigit)
+        {
+            fprintf(stderr, "\
+[ERROR]     Please input digit string.\n");
+            continue;
+        }
+
+        int iParsedIndex = atoi(strOpt);
+
+        if (iParsedIndex >= FLIGHT_COUNT || iParsedIndex < 0)
+        {
+            fprintf(stderr, "\
+[ERROR]     Out of the list range.\n");
+            continue;
+        }
+
+        flightMenu(&flightArr[iParsedIndex]);
     }
 
     return 0;
 }
 
-int flightMenu(FlightSeats *pFlightSeats)
+int flightMenu(Flight *pFlight)
 {
-    Seat seatsTemp[SEATS_COUNT];
-    for (int i = 0; i < SEATS_COUNT; i++)
-        initSeat(&seatsTemp[i]);
+    FlightSeats *pFlightSeats = &(pFlight->flightSeats);
 
     FlightSeats flightSeatsTemp;
-    initFlightSeats(&flightSeatsTemp, seatsTemp, (unsigned int)SEATS_COUNT);
-    numberTheFlightSeats(&flightSeatsTemp);
+
+    FlightSeats *pFlightSeatsTemp = &flightSeatsTemp;
+    initFlightSeats(pFlightSeatsTemp, (unsigned int)SEATS_COUNT);
+
+    // flightSeatsTemp 为 pFlight->flightSeats 的副本
+    copyFlightSeats(pFlightSeatsTemp, pFlightSeats);
 
     char chOpt;
 
+    bool isFlightSeatsConfirmed = false;
     bool isBackToMainMenu = false;
     while (!isBackToMainMenu)
     {
-        showMainMenu();
+        if (showFlightMenu(pFlight->strFlightNum, isFlightSeatsConfirmed) == false)
+        {
+            fprintf(stderr, "\
+An error occurred while handling the flight.\n");
+            return ERROR_CODE_GOT_AN_ERROR;
+        }
+
         chOpt = getcharOpt();
 
         switch (chOpt)
         {
         case 'a':
-            showCountOfEmptySeats(pFlightSeats);
+            showCountOfEmptySeats(pFlightSeatsTemp);
             break;
 
         case 'b':
-            listEmptySeats(pFlightSeats);
+            listEmptySeats(pFlightSeatsTemp);
             break;
 
         case 'c':
-            listSeatsByAlphabeticalOrder(pFlightSeats);
+            listSeatsByAlphabeticalOrder(pFlightSeatsTemp);
             break;
 
         case 'd':
-            SeatAssignmentMenu(pFlightSeats);
+            SeatAssignmentMenu(pFlightSeatsTemp);
+            isFlightSeatsConfirmed = false;
             break;
 
         case 'e':
-            DelSeatAssignmentMenu(pFlightSeats);
+            DelSeatAssignmentMenu(pFlightSeatsTemp);
+            isFlightSeatsConfirmed = false;
             break;
 
         case 'f':
-            confirmSeatsAssignment(pFlightSeats, &flightSeatsTemp);
+            if (confirmSeatsAssignment(pFlightSeats, &flightSeatsTemp) == true)
+            {
+                isFlightSeatsConfirmed = true;
+            }
             break;
 
         case 'g':

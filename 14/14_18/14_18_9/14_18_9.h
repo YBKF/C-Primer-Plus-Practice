@@ -11,6 +11,8 @@
 #define FLIGHT_NUM_STR_SIZE (3)
 #define FLIGHT_COUNT (4)
 
+#define STR_FLIGHTS_INDEX_LENGTH (8)
+
 #define NAME_FIRST_MAX_LENGTH (25)
 #define NAME_FIRST_MAX_SIZE (NAME_FIRST_MAX_LENGTH + 1)
 #define NAME_LAST_MAX_LENGTH (25)
@@ -28,6 +30,8 @@
 #define STR_BOOL_LENGTH (3)
 #define STR_BOOL_SIZE (STR_BOOL_LENGTH + 1)
 
+#define ERROR_CODE_GOT_AN_ERROR (-1)
+
 typedef struct _Name
 {
     char first[NAME_FIRST_MAX_SIZE];
@@ -43,13 +47,13 @@ typedef struct _Seat
 
 typedef struct _FlightSeats
 {
-    Seat *seatsList;
+    Seat seatsList[SEATS_COUNT];
     unsigned int seatsCount;
 } FlightSeats;
 
 typedef struct _Flight
 {
-    char *strFlightNum;
+    const char *strFlightNum;
     FlightSeats flightSeats;
 } Flight;
 
@@ -65,19 +69,20 @@ char getcharOpt();
 void transStrToUpperCase(char *str);
 char *copyString(char *strTarget, char *strSource, int iSize);
 FlightSeats *copyFlightSeats(FlightSeats *pFlightSeatsTarget, const FlightSeats *pFlightSeatsSource);
+Flight *copyFlight(Flight *pFlightTarget, const Flight *pFlightSource);
 
 bool InsertSort(FlightSeats *flightSeats);
 
 bool initSeat(Seat *seat);
-bool initFlightSeats(FlightSeats *flightSeats, Seat seats[], unsigned int uiSeatsCount);
+bool initFlightSeats(FlightSeats *flightSeats, unsigned int uiSeatsCount);
 
-void showMainMenu();
+bool showFlightMenu(const char *strFlightNum, const bool isFlightSeatsConfirmed);
 
 unsigned int getCountOfEmptySeats(const FlightSeats *flightSeats);
 bool printSeatInfo(const Seat *seat);
 bool numberTheFlightSeats(FlightSeats *flightSeats);
 bool sortSeatsListInAlphabeticalOrder(FlightSeats *flightSeats);
-Seat *findSeatByNum(const FlightSeats *flightSeats, unsigned int uiNum);
+Seat *findSeatByNum(FlightSeats *flightSeats, unsigned int uiNum);
 
 // 主菜单操作
 
@@ -88,6 +93,10 @@ bool confirmSeatsAssignment(FlightSeats *flightSeats, const FlightSeats *flightS
 
 bool SeatAssignmentMenu(FlightSeats *flightSeats);
 bool DelSeatAssignmentMenu(FlightSeats *flightSeats);
+
+bool showFlightNum(const int iFlightIndex, const char *strFlightNum);
+bool listFlights(const Flight flightArr[], const int arrSize);
+bool showMainMenu(const Flight flightArr[], const int arrSize);
 
 char *s_gets(char *st, int n)
 {
@@ -220,6 +229,20 @@ FlightSeats *copyFlightSeats(FlightSeats *pFlightSeatsTarget, const FlightSeats 
     return pFlightSeatsTarget;
 }
 
+Flight *copyFlight(Flight *pFlightTarget, const Flight *pFlightSource)
+{
+    if (NULL == pFlightTarget || NULL == pFlightSource)
+    {
+        fprintf(stderr, "\
+[ERROR]     An error occurred while copying a FlightSeats.\n\
+            Because of the parameter is a null pointer or invalid memory region.\n");
+        return NULL;
+    }
+
+    pFlightTarget->strFlightNum = pFlightSource->strFlightNum;
+    copyFlightSeats(&pFlightTarget->flightSeats, &pFlightSource->flightSeats);
+}
+
 /**
  * - [in, out] flightSeats
  *
@@ -283,7 +306,6 @@ bool initSeat(Seat *seat)
 
 /**
  * - [out] flightSeats
- * - [in] seats
  * - [in] uiSeatsCount
  *
  * 新建的 FlightSeats 结构在初次使用前，应使用此函数进行初始化。
@@ -293,18 +315,14 @@ bool initSeat(Seat *seat)
  * flightSeats 是一个 FlightSeats 类型的指针，
  * 此指针应指向一个（新创建的）未初始化的 FlightSeats 类型的结构。
  *
- * [in] seats
- * seats 是一个 Seat 类型的数组，
- * 赋给 flightSeats 作为其成员结构。
- *
  * [in] uiSeatsCount
  * uiSeatsCount 是一个无符号整型类型的值，
  * 赋给 flightSeats 作为其成员结构。
  *
  */
-bool initFlightSeats(FlightSeats *flightSeats, Seat seats[], unsigned int uiSeatsCount)
+bool initFlightSeats(FlightSeats *flightSeats, unsigned int uiSeatsCount)
 {
-    if (flightSeats == NULL || seats == NULL)
+    if (flightSeats == NULL)
     {
         fprintf(stderr, "\
 [ERROR]     An error occurred while initialing the flightSeats.\n\
@@ -312,24 +330,146 @@ bool initFlightSeats(FlightSeats *flightSeats, Seat seats[], unsigned int uiSeat
         return false;
     }
 
-    *flightSeats = (FlightSeats){
-        .seatsList = seats,
-        .seatsCount = uiSeatsCount};
+    Seat defaultSeat;
+
+    initSeat(&defaultSeat);
+
+    Seat *seatsList = flightSeats->seatsList;
+    flightSeats->seatsCount = uiSeatsCount;
+
+    for (int i = 0; i < uiSeatsCount; i++)
+    {
+        seatsList[i] = defaultSeat;
+    }
 
     return true;
 }
 
-void showMainMenu()
+bool initFlight(Flight *pFlight, const char *strFlightNum, const FlightSeats *pFlightSeats)
 {
+    if (NULL == pFlight || NULL == strFlightNum || NULL == pFlightSeats)
+    {
+        fprintf(stderr, "\
+[ERROR]     An error occurred while initialing the flight.\n\
+            Null pointer.\n");
+        return false;
+    }
+
+    *pFlight = (Flight){
+        .strFlightNum = strFlightNum,
+        .flightSeats = *pFlightSeats};
+
+    return true;
+}
+
+bool showFlightNum(const int iFlightIndex, const char *strFlightNum)
+{
+    if (NULL == strFlightNum)
+    {
+        fprintf(stderr, "\
+[ERROR]     An error occurred while showing the flight menu.\n\
+            The flight is not exist.\n");
+        return false;
+    }
+
     fprintf(stdout, "\
+  %d) %s\n",
+            iFlightIndex, strFlightNum);
+
+    return true;
+}
+
+bool listFlights(const Flight flightArr[], const int arrSize)
+{
+    if (NULL == flightArr)
+    {
+        fprintf(stderr, "\
+[ERROR]     An error occurred while list the flight info.\n\
+            The FlightList is null.\n");
+        return false;
+    }
+
+    if (arrSize <= 0)
+    {
+        fprintf(stdout, "\
+  There have nothing about any flights here.\n");
+        return false;
+    }
+
+    for (int i = 0; i < arrSize; i++)
+    {
+        showFlightNum(i, flightArr[i].strFlightNum);
+    }
+
+    return true;
+}
+
+bool showMainMenu(const Flight flightArr[], const int arrSize)
+{
+    if (NULL == flightArr)
+    {
+        fprintf(stderr, "\
+[ERROR]     An error occurred while list the flight info.\n\
+            The FlightList is null.\n");
+        return false;
+    }
+
+    if (arrSize <= 0)
+    {
+        fprintf(stdout, "\
+  There have nothing about any flights here.\n");
+        return false;
+    }
+
+    fprintf(stdout, "\
+Select a flight number: \n");
+    if (listFlights(flightArr, arrSize) == false)
+    {
+        return false;
+    }
+
+    fprintf(stdout, "\
+  q) Quit.\n");
+
+    return true;
+}
+
+bool showFlightMenu(const char *strFlightNum, const bool isFlightSeatsConfirmed)
+{
+    if (NULL == strFlightNum)
+    {
+        fprintf(stderr, "\
+[ERROR]     An error occurred while showing the flight menu.\n\
+            The flight is not exist.\n");
+        return false;
+    }
+
+    char *strIsFlightSeatsConfirmed;
+
+    if (isFlightSeatsConfirmed == true)
+    {
+        strIsFlightSeatsConfirmed = "Yes";
+    }
+    else
+    {
+        strIsFlightSeatsConfirmed = "No";
+    }
+
+    fprintf(stdout, "\
+Selected Flight: %s\n\
+Flight Seats Confirmed: %s\n\
+\n\
 To choose a function, enter its letter label:\n\
   a) Show number of empty seats\n\
   b) Show list of empty seats\n\
   c) Show alphabetical list of seats\n\
   d) Assign a customer to a seat assignment\n\
   e) Delete a seat assignment\n\
-  f) Check the seats assignment\n\
-  g) Back to main menu.\n");
+  f) Confirm the seats assignment\n\
+  g) Back to main menu.\n",
+            strFlightNum, strIsFlightSeatsConfirmed);
+
+    return true;
 }
 
 /**
@@ -452,7 +592,7 @@ bool sortSeatsListInAlphabeticalOrder(FlightSeats *flightSeats)
  * 通过编号来查找座位列表中是否有匹配的座位，匹配则返回此座位的地址，否则返回空指针。
  *
  */
-Seat *findSeatByNum(const FlightSeats *flightSeats, unsigned int uiNum)
+Seat *findSeatByNum(FlightSeats *flightSeats, unsigned int uiNum)
 {
     if (flightSeats == NULL || flightSeats->seatsList == NULL)
     {
@@ -536,7 +676,6 @@ bool listSeatsByAlphabeticalOrder(const FlightSeats *flightSeats)
         return false;
     }
 
-    Seat seatsTemp[SEATS_COUNT];
     FlightSeats flightSeatsTemp;
 
     // 选择最小的，以防止数组下标“溢出”
@@ -544,7 +683,7 @@ bool listSeatsByAlphabeticalOrder(const FlightSeats *flightSeats)
                                     ? SEATS_COUNT
                                     : flightSeats->seatsCount;
 
-    if (initFlightSeats(&flightSeatsTemp, seatsTemp, uiSeatsCount) == false)
+    if (initFlightSeats(&flightSeatsTemp, uiSeatsCount) == false)
         return false;
 
     for (unsigned int ui = 0; ui < uiSeatsCount; ui++)
